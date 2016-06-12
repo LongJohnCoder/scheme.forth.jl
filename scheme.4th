@@ -3,6 +3,8 @@
 vocabulary scheme
 scheme definitions
 
+include term-colours.4th
+
 \ Cons cell memory
 1000 constant memsize
 create car memsize allot
@@ -133,31 +135,6 @@ variable parse-str
 
 \ ---- REPL ----
 
-: escape 27 emit [char] [ emit ;
-: escape-end [char] m emit ;
-
-: set-term-colour
-    escape [char] 3 emit [char] 0 + emit escape-end
-;
-
-: reset-term
-    escape [char] 0 escape-end
-;
-
-: colour
-    create ,
-does>
-    @ set-term-colour
-;
-
-1 colour red
-2 colour green
-3 colour yellow
-4 colour blue
-5 colour magenta
-6 colour cyan
-7 colour white
-
 create repl-buffer 161 allot
 
 : repl
@@ -166,7 +143,7 @@ create repl-buffer 161 allot
     cr
 
     begin
-        green ." => " white
+        bold fg green ." => " reset-term
 
         repl-buffer 1+ 160 expect cr
         span @ repl-buffer !
