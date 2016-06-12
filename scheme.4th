@@ -19,6 +19,16 @@ create types memsize allot
 variable nextfree
 0 nextfree !
 
+: make-bool 
+    nextfree @
+
+    car nextfree @ + !
+    cdr nextfree @ + 0 !
+    types nextfree @ + bool-type !
+
+    1 nextfree +!
+;
+
 : stack
     create here 1+ , allot ;
 
@@ -80,25 +90,36 @@ variable parse-str
 
 : parsebool
 
-    nextchar emit cr
-    trace
-
-    false
-    nextchar [char] # <> if exit then
+    nextchar [char] # <> if false exit then
 
     1 inc-parse-idx
 
     nextchar dup [char] t = swap [char] f = or
     not if
         1 dec-parse-idx
-        exit
+        false exit
     then
 
     1 inc-parse-idx
 
     ?delim not if
         2 dec-parse-idx
-        exit
+        false exit
+    else
+        1 dec-parse-idx
+        nextchar [char] t = make-bool
+        1 inc-parse-idx
+        true exit
+    then
+;
+
+\ Set cdr at i to j, leaving j on the stack
+: append ( i j -- j )
+    dup rot
+    dup 0> if
+        cdr + !
+    else
+        2drop
     then
 ;
 
@@ -119,8 +140,9 @@ variable parse-str
     then
 
     parsebool if
+        append
         exit
-    exit
+    then
 ;
 
 \ Parse a counted string into a scheme expression
