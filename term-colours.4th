@@ -11,7 +11,7 @@
 ;
 
 : reset-term
-    escape [char] 0 escape-end
+    escape [char] 0 emit escape-end
 ;
 
 : bold
@@ -25,6 +25,7 @@ does>
     set-term-colour
 ;
 
+0 colour black
 1 colour red
 2 colour green
 3 colour yellow
