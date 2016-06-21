@@ -5,173 +5,168 @@ scheme definitions
 
 include term-colours.4th
 
-\ Cons cell memory
-1000 constant memsize
-create car memsize allot
-create cdr memsize allot
-create types memsize allot
+0 constant number-type
+: istype? ( obj -- obj b )
+    over = ;
 
-0 constant symbol-type
-1 constant int-type
-2 constant list-type
-3 constant bool-type
+\ ---- Read ----
 
-variable nextfree
-0 nextfree !
-
-: make-bool 
-    nextfree @
-
-    car nextfree @ + !
-    cdr nextfree @ + 0 !
-    types nextfree @ + bool-type !
-
-    1 nextfree +!
-;
-
-: stack
-    create here 1+ , allot ;
-
-
-: push ( st v -- )
-    over @ !
-    1 swap +!
-;
-
-: pop ( st -- v )
-    dup @       ( s0 sp )
-    1-          ( so sp' )
-
-    2dup = abort" Stack underflow."
-    
-    dup @       ( s0 sp' v )
-    -rot swap   ( v sp' s0 )
-    !
-;
-
-100 stack parse-stack 
 variable parse-idx
+variable dummy-parse-idx
+
+: store-parse-idx
+    parse-idx @ dummy-parse-idx !  ;
+
+: restore-parse-idx
+    dummy-parse-idx @ parse-idx !  ;
+
 variable parse-str
 
-
-: inc-parse-idx parse-idx +! ;
-: dec-parse-idx parse-idx -! ;
-
-: ?charavailable ( -- bool )
+: charavailable? ( -- bool )
     parse-str @ @ parse-idx @ >
 ;
 
 : nextchar ( -- char )
-    ?charavailable if
+    charavailable? if
         parse-str @ 1+ parse-idx @ + @
     else
         0
     then
 ;
 
-: ?whitespace ( -- bool )
+: whitespace? ( -- bool )
     nextchar BL = 
     nextchar '\n' = or
 ;
 
-: ?delim ( -- bool )
-    ?whitespace
+: delim? ( -- bool )
+    whitespace?
     nextchar [char] ( = or
     nextchar [char] ) = or
 ;
 
 : eatspaces
     begin
-        ?whitespace
+        whitespace?
     while
             1 parse-idx +!
     repeat
 ;
 
-: parsebool
+: digit? ( -- bool )
+    nextchar [char] 0 >=
+    nextchar [char] 9 <=
+    and ;
 
-    nextchar [char] # <> if false exit then
+: minus? ( -- bool )
+    nextchar [char] - = ;
 
-    1 inc-parse-idx
-
-    nextchar dup [char] t = swap [char] f = or
-    not if
-        1 dec-parse-idx
-        false exit
+: number? ( -- bool )
+    digit? minus? or false = if
+        false
+        exit
     then
 
-    1 inc-parse-idx
+    store-parse-idx
+    1 parse-idx +!
 
-    ?delim not if
-        2 dec-parse-idx
-        false exit
+    begin digit? while
+        1 parse-idx +!
+    repeat
+
+    delim? charavailable? false = or if
+        restore-parse-idx
+        true
     else
-        1 dec-parse-idx
-        nextchar [char] t = make-bool
-        1 inc-parse-idx
-        true exit
+        restore-parse-idx
+        false
     then
 ;
 
-\ Set cdr at i to j, leaving j on the stack
-: append ( i j -- j )
-    dup rot
-    dup 0> if
-        cdr + !
-    else
-        2drop
-    then
-;
-
-: parsetoken
-
-    eatspaces
-
-    \ Parens
-
-    nextchar [char] ( = if
-        \ todo
-        exit
+: readnum ( -- num-atom )
+    minus? dup if
+        1 parse-idx +!
     then
 
-    nextchar [char] ) = if
-        \ todo
-        exit
-    then
+    0
 
-    parsebool if
-        append
-        exit
-    then
+    begin digit? while
+        10 * nextchar [char] 0 - +
+        1 parse-idx +!
+    repeat
+
+    swap if negate then
+
+    number-type
 ;
 
 \ Parse a counted string into a scheme expression
-: parseexp ( straddr n -- exp )
-    0 parse-idx !
+: read ( -- obj )
 
-    begin
-        parsetoken
-    nextchar 0 =
-    until
+    eatspaces
+    number? if
+        readnum
+        exit
+    then
+
+    ." Error parsing string at character" parse-idx ? ." . Aborting." cr
+    abort
+;
+
+\ ---- Eval ----
+
+: self-evaluating? ( obj -- obj bool )
+    number-type istype? ;
+
+: eval
+    self-evaluating? if
+        exit
+    then
+
+    ." Error evaluating expression - unrecognized type. Aborting." cr
+    abort
+;
+
+\ ---- Print ----
+
+: print ( obj -- )
+    number-type istype? if
+        drop .
+    then
 ;
 
 \ ---- REPL ----
 
 create repl-buffer 161 allot
+repl-buffer parse-str !
+
+: getline
+    repl-buffer 1+ 160 expect cr span @ repl-buffer ! ;
+
+: eof?
+    repl-buffer @ 0= if false exit then
+    repl-buffer 1+ @ 4 <> if false exit then
+    true ;
 
 : repl
-    repl-buffer parse-str !
-
-    cr
+    cr ." Welcome to scheme.forth.jl!" cr
+       ." Use Ctrl-D to exit." cr
 
     begin
-        bold fg green ." => " reset-term
+        cr bold fg green ." => " reset-term
+        getline
 
-        repl-buffer 1+ 160 expect cr
-        span @ repl-buffer !
+        eof? if
+            fg blue ." Moriturus te saluto." reset-term
+            exit
+        then
 
-        parseexp
-        \ eval
+        repl-buffer @ 0> if
+            0 parse-idx !
+            read
+            eval
+            print
+        then
     again
 ;
 
