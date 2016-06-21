@@ -6,6 +6,7 @@ scheme definitions
 include term-colours.4th
 
 0 constant number-type
+1 constant boolean-type
 : istype? ( obj -- obj b )
     over = ;
 
@@ -83,6 +84,19 @@ variable parse-str
     then
 ;
 
+: boolean? ( -- bool )
+    nextchar [char] # <> if false exit then
+
+    1 parse-idx +!
+
+    nextchar [char] t <>
+    nextchar [char] f <>
+    and if 1 parse-idx -! false exit then
+
+    1 parse-idx -!
+    true
+;
+
 : readnum ( -- num-atom )
     minus? dup if
         1 parse-idx +!
@@ -100,39 +114,70 @@ variable parse-str
     number-type
 ;
 
+: readbool ( -- bool-atom )
+    1 parse-idx +!
+    
+    nextchar [char] f = if
+        false
+    else
+        true
+    then
+
+    boolean-type
+;
+
 \ Parse a counted string into a scheme expression
 : read ( -- obj )
 
     eatspaces
+
     number? if
         readnum
         exit
     then
 
-    ." Error parsing string at character" parse-idx ? ." . Aborting." cr
+    boolean? if
+        readbool
+        exit
+    then
+
+    bold fg red ." Error parsing string starting at character '"
+    nextchar emit
+    ." '. Aborting." reset-term cr
     abort
 ;
 
 \ ---- Eval ----
 
 : self-evaluating? ( obj -- obj bool )
-    number-type istype? ;
+    number-type istype? if true exit then
+    boolean-type istype? if true exit then
+    false ;
 
 : eval
     self-evaluating? if
         exit
     then
 
-    ." Error evaluating expression - unrecognized type. Aborting." cr
+    bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
 ;
 
 \ ---- Print ----
 
-: print ( obj -- )
-    number-type istype? if
-        drop .
+: printnum ( numobj -- ) drop . ;
+: printbool ( numobj -- )
+    drop if
+        ." #t"
+    else
+        ." #f"
     then
+;
+
+: print ( obj -- )
+    ." ;"
+    number-type istype? if printnum exit then
+    boolean-type istype? if printbool exit then
 ;
 
 \ ---- REPL ----
@@ -157,7 +202,7 @@ repl-buffer parse-str !
         getline
 
         eof? if
-            fg blue ." Moriturus te saluto." reset-term
+            bold fg blue ." Moriturus te saluto." reset-term
             exit
         then
 
@@ -165,7 +210,7 @@ repl-buffer parse-str !
             0 parse-idx !
             read
             eval
-            print
+            fg cyan print reset-term
         then
     again
 ;

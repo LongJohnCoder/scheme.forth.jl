@@ -14,6 +14,11 @@
     escape [char] 0 emit escape-end
 ;
 
+: clear-term
+    escape [char] 2 emit [char] J emit
+    escape [char] 0 emit [char] ; emit [char] 0 emit [char] f emit
+;
+
 : bold
     escape [char] 1 emit escape-end
 ;
