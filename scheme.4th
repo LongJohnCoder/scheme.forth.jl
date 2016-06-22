@@ -7,6 +7,7 @@ include term-colours.4th
 
 0 constant number-type
 1 constant boolean-type
+2 constant character-type
 : istype? ( obj -- obj b )
     over = ;
 
@@ -14,6 +15,12 @@ include term-colours.4th
 
 variable parse-idx
 variable dummy-parse-idx
+
+: inc-parse-idx
+    1 parse-idx +! ;
+
+: dec-parse-idx
+    1 parse-idx -! ;
 
 : store-parse-idx
     parse-idx @ dummy-parse-idx !  ;
@@ -50,7 +57,7 @@ variable parse-str
     begin
         whitespace?
     while
-            1 parse-idx +!
+        inc-parse-idx
     repeat
 ;
 
@@ -69,10 +76,10 @@ variable parse-str
     then
 
     store-parse-idx
-    1 parse-idx +!
+    inc-parse-idx
 
     begin digit? while
-        1 parse-idx +!
+        inc-parse-idx
     repeat
 
     delim? charavailable? false = or if
@@ -87,26 +94,42 @@ variable parse-str
 : boolean? ( -- bool )
     nextchar [char] # <> if false exit then
 
-    1 parse-idx +!
+    store-parse-idx
+    inc-parse-idx
 
     nextchar [char] t <>
     nextchar [char] f <>
-    and if 1 parse-idx -! false exit then
+    and if restore-parse-idx false exit then
 
-    1 parse-idx -!
+    restore-parse-idx
     true
+;
+
+: character? ( -- bool )
+    nextchar [char] # <> if false exit then
+
+    store-parse-idx
+    inc-parse-idx
+
+    nextchar [char] \ <> if restore-parse-idx false exit then
+
+    inc-parse-idx
+
+    charavailable? false = if restore-parse-idx false exit then
+
+    restore-parse-idx true
 ;
 
 : readnum ( -- num-atom )
     minus? dup if
-        1 parse-idx +!
+        inc-parse-idx
     then
 
     0
 
     begin digit? while
         10 * nextchar [char] 0 - +
-        1 parse-idx +!
+        inc-parse-idx
     repeat
 
     swap if negate then
@@ -115,7 +138,7 @@ variable parse-str
 ;
 
 : readbool ( -- bool-atom )
-    1 parse-idx +!
+    inc-parse-idx
     
     nextchar [char] f = if
         false
@@ -166,6 +189,7 @@ variable parse-str
 \ ---- Print ----
 
 : printnum ( numobj -- ) drop . ;
+
 : printbool ( numobj -- )
     drop if
         ." #t"
@@ -202,7 +226,7 @@ repl-buffer parse-str !
         getline
 
         eof? if
-            bold fg blue ." Moriturus te saluto." reset-term
+            cr bold fg blue ." Moriturus te saluto." reset-term
             exit
         then
 

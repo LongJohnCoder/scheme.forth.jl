@@ -10,19 +10,6 @@
     escape emit [char] 0 + emit escape-end
 ;
 
-: reset-term
-    escape [char] 0 emit escape-end
-;
-
-: clear-term
-    escape [char] 2 emit [char] J emit
-    escape [char] 0 emit [char] ; emit [char] 0 emit [char] f emit
-;
-
-: bold
-    escape [char] 1 emit escape-end
-;
-
 : colour
     create ,
 does>
@@ -39,8 +26,22 @@ does>
 6 colour cyan
 7 colour white
 
+: bold
+    escape [char] 1 emit escape-end
+;
+
+: reset-term
+    escape [char] 0 emit escape-end
+;
+
+: clear-term
+    escape [char] 2 emit [char] J emit
+    escape [char] 0 emit [char] ; emit [char] 0 emit [char] f emit
+;
+
 \ Example usage:
 \ fg red        ( set fg colour to red )
 \ bg green      ( set bg colour to green )
 \ bold          ( use a bold font )
 \ reset-term    ( return everything to normal )
+\ clear-term    ( clear terminal and return cursor to origin )
