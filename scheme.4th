@@ -175,9 +175,9 @@ variable parse-str
 ;
 
 : print ( obj -- )
-    ." ;"
-    number-type istype? if printnum exit then
-    boolean-type istype? if printbool exit then
+    ." ; "
+    number-type istype? if ." => " printnum exit then
+    boolean-type istype? if ." => " printbool exit then
 ;
 
 \ ---- REPL ----
@@ -186,7 +186,7 @@ create repl-buffer 161 allot
 repl-buffer parse-str !
 
 : getline
-    repl-buffer 1+ 160 expect cr span @ repl-buffer ! ;
+    repl-buffer 1+ 160 expect span @ repl-buffer ! ;
 
 : eof?
     repl-buffer @ 0= if false exit then
@@ -198,7 +198,7 @@ repl-buffer parse-str !
        ." Use Ctrl-D to exit." cr
 
     begin
-        cr bold fg green ." => " reset-term
+        cr bold fg green ." > " reset-term
         getline
 
         eof? if
