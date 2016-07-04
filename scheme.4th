@@ -18,6 +18,24 @@ variable stored-parse-idx
 create parse-str 161 allot
 variable parse-str-span
 
+
+create parse-idx-stack 10 allot 
+variable parse-idx-sp
+parse-idx-stack parse-idx-sp !
+
+: push-parse-idx
+    parse-idx @ parse-idx-sp @ !
+    1 parse-idx-sp +!
+;
+
+: pop-parse-idx
+    parse-idx-sp @ parse-idx-stack <= abort" Parse index stack underflow."
+
+    1 parse-idx-sp -!
+
+    parse-idx-sp @ @ parse-idx ! ;
+
+
 : append-newline
     '\n' parse-str parse-str-span @ + !
     1 parse-str-span +! ;
@@ -37,12 +55,6 @@ variable parse-str-span
 
 : dec-parse-idx
     1 parse-idx -! ;
-
-: store-parse-idx
-    parse-idx @ stored-parse-idx !  ;
-
-: restore-parse-idx
-    stored-parse-idx @ parse-idx !  ;
 
 : charavailable? ( -- bool )
     parse-str-span @ parse-idx @ > ;
@@ -86,7 +98,7 @@ variable parse-str-span
         exit
     then
 
-    store-parse-idx
+    push-parse-idx
     inc-parse-idx
 
     begin digit? while
@@ -94,10 +106,10 @@ variable parse-str-span
     repeat
 
     delim? charavailable? false = or if
-        restore-parse-idx
+        pop-parse-idx
         true
     else
-        restore-parse-idx
+        pop-parse-idx
         false
     then
 ;
@@ -105,30 +117,54 @@ variable parse-str-span
 : boolean? ( -- bool )
     nextchar [char] # <> if false exit then
 
-    store-parse-idx
+    push-parse-idx
     inc-parse-idx
 
     nextchar [char] t <>
     nextchar [char] f <>
-    and if restore-parse-idx false exit then
+    and if pop-parse-idx false exit then
 
-    restore-parse-idx
+    pop-parse-idx
     true
+;
+
+: str-equiv? ( str -- bool )
+    push-parse-idx
+
+    true
+
+    swap dup rot + swap
+    do
+        i @ nextchar <> if
+            drop false
+            leave
+        then
+
+        inc-parse-idx
+    loop
+
+    delim? <> if drop false then
+
+    pop-parse-idx
 ;
 
 : character? ( -- bool )
     nextchar [char] # <> if false exit then
 
-    store-parse-idx
+    push-parse-idx
     inc-parse-idx
 
-    nextchar [char] \ <> if restore-parse-idx false exit then
+    nextchar [char] \ <> if pop-parse-idx false exit then
 
     inc-parse-idx
 
-    charavailable? false = if restore-parse-idx false exit then
+    S" newline" str-equiv? if true exit then
+    S" space" str-equiv? if true exit then
+    S" tab" str-equiv? if true exit then
 
-    restore-parse-idx true
+    charavailable? false = if pop-parse-idx false exit then
+
+    pop-parse-idx true
 ;
 
 : readnum ( -- num-atom )
