@@ -18,7 +18,6 @@ variable stored-parse-idx
 create parse-str 161 allot
 variable parse-str-span
 
-
 create parse-idx-stack 10 allot 
 variable parse-idx-sp
 parse-idx-stack parse-idx-sp !
@@ -204,6 +203,19 @@ parse-idx-stack parse-idx-sp !
     boolean-type
 ;
 
+: readchar ( -- char-atom )
+    inc-parse-idx
+    inc-parse-idx
+
+    S" newline" str-equiv? if '\n' character-type exit then
+    S" space" str-equiv? if bl character-type exit then
+    S" tab" str-equiv? if 9 character-type exit then
+
+    nextchar character-type
+
+    inc-parse-idx
+;
+
 \ Parse a scheme expression
 : read ( -- obj )
 
@@ -216,6 +228,11 @@ parse-idx-stack parse-idx-sp !
 
     boolean? if
         readbool
+        exit
+    then
+
+    character? if
+        readchar
         exit
     then
 
@@ -258,10 +275,20 @@ parse-idx-stack parse-idx-sp !
     then
 ;
 
+: printchar ( charobj -- )
+    drop
+    case
+        9 of ." #\tab" endof
+        bl of ." #\space" endof
+        '\n' of ." #\newline" endof
+    endcase
+;
+
 : print ( obj -- )
     ." ; "
     number-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
+    character-type istype? if printchar exit then
 ;
 
 \ ---- REPL ----
