@@ -105,7 +105,7 @@ parse-idx-stack parse-idx-sp !
         inc-parse-idx
     repeat
 
-    delim? charavailable? false = or if
+    delim? if
         pop-parse-idx
         true
     else
@@ -124,8 +124,14 @@ parse-idx-stack parse-idx-sp !
     nextchar [char] f <>
     and if pop-parse-idx false exit then
 
-    pop-parse-idx
-    true
+    inc-parse-idx
+    delim? if
+        pop-parse-idx
+        true
+    else
+        pop-parse-idx
+        false
+    then
 ;
 
 : str-equiv? ( str -- bool )
