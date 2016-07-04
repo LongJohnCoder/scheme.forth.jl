@@ -14,7 +14,19 @@ include term-colours.4th
 \ ---- Read ----
 
 variable parse-idx
-variable dummy-parse-idx
+variable stored-parse-idx
+create parse-str 161 allot
+variable parse-str-span
+
+: append-newline
+    1 parse-str-span +!
+    '\n' parse-str parse-str-span @ + ! ;
+
+: getline
+    parse-str 160 expect
+    span @ parse-str-span !
+    append-newline
+    0 parse-idx ! ;
 
 : inc-parse-idx
     1 parse-idx +! ;
@@ -23,24 +35,19 @@ variable dummy-parse-idx
     1 parse-idx -! ;
 
 : store-parse-idx
-    parse-idx @ dummy-parse-idx !  ;
+    parse-idx @ stored-parse-idx !  ;
 
 : restore-parse-idx
-    dummy-parse-idx @ parse-idx !  ;
+    stored-parse-idx @ parse-idx !  ;
 
-variable parse-str
 
 : charavailable? ( -- bool )
-    parse-str @ @ parse-idx @ >
+    parse-str-span @ parse-idx @ >
 ;
 
 : nextchar ( -- char )
-    charavailable? if
-        parse-str @ 1+ parse-idx @ + @
-    else
-        0
-    then
-;
+    charavailable? false = if getline then
+    parse-str parse-idx @ + @ ;
 
 : whitespace? ( -- bool )
     nextchar BL = 
@@ -149,7 +156,7 @@ variable parse-str
     boolean-type
 ;
 
-\ Parse a counted string into a scheme expression
+\ Parse a scheme expression
 : read ( -- obj )
 
     eatspaces
@@ -206,36 +213,15 @@ variable parse-str
 
 \ ---- REPL ----
 
-create repl-buffer 161 allot
-repl-buffer parse-str !
-
-: getline
-    repl-buffer 1+ 160 expect span @ repl-buffer ! ;
-
-: eof?
-    repl-buffer @ 0= if false exit then
-    repl-buffer 1+ @ 4 <> if false exit then
-    true ;
-
 : repl
     cr ." Welcome to scheme.forth.jl!" cr
        ." Use Ctrl-D to exit." cr
 
     begin
         cr bold fg green ." > " reset-term
-        getline
-
-        eof? if
-            cr bold fg blue ." Moriturus te saluto." reset-term
-            exit
-        then
-
-        repl-buffer @ 0> if
-            0 parse-idx !
-            read
-            eval
-            fg cyan print reset-term
-        then
+        read
+        eval
+        fg cyan print reset-term
     again
 ;
 
