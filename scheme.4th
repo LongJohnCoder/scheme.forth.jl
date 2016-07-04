@@ -19,11 +19,15 @@ create parse-str 161 allot
 variable parse-str-span
 
 : append-newline
-    1 parse-str-span +!
-    '\n' parse-str parse-str-span @ + ! ;
+    '\n' parse-str parse-str-span @ + !
+    1 parse-str-span +! ;
+
+: empty-parse-str
+    0 parse-str-span !
+    0 parse-idx ! ;
 
 : getline
-    parse-str 160 expect
+    parse-str 160 expect cr
     span @ parse-str-span !
     append-newline
     0 parse-idx ! ;
@@ -40,10 +44,8 @@ variable parse-str-span
 : restore-parse-idx
     stored-parse-idx @ parse-idx !  ;
 
-
 : charavailable? ( -- bool )
-    parse-str-span @ parse-idx @ >
-;
+    parse-str-span @ parse-idx @ > ;
 
 : nextchar ( -- char )
     charavailable? false = if getline then
@@ -51,8 +53,10 @@ variable parse-str-span
 
 : whitespace? ( -- bool )
     nextchar BL = 
-    nextchar '\n' = or
-;
+    nextchar '\n' = or ;
+
+: eof? ( -- bool )
+    nextchar 4 = ;
 
 : delim? ( -- bool )
     whitespace?
@@ -153,6 +157,8 @@ variable parse-str-span
         true
     then
 
+    inc-parse-idx
+
     boolean-type
 ;
 
@@ -169,6 +175,11 @@ variable parse-str-span
     boolean? if
         readbool
         exit
+    then
+
+    eof? if
+        bold fg blue ." Moriturus te saluto." reset-term ."  ok" cr
+        quit
     then
 
     bold fg red ." Error parsing string starting at character '"
@@ -207,8 +218,8 @@ variable parse-str-span
 
 : print ( obj -- )
     ." ; "
-    number-type istype? if ." => " printnum exit then
-    boolean-type istype? if ." => " printbool exit then
+    number-type istype? if printnum exit then
+    boolean-type istype? if printbool exit then
 ;
 
 \ ---- REPL ----
@@ -216,6 +227,8 @@ variable parse-str-span
 : repl
     cr ." Welcome to scheme.forth.jl!" cr
        ." Use Ctrl-D to exit." cr
+
+    empty-parse-str
 
     begin
         cr bold fg green ." > " reset-term
