@@ -1,5 +1,3 @@
-\ Scheme interpreter
-
 vocabulary scheme
 scheme definitions
 
@@ -165,9 +163,9 @@ parse-idx-stack parse-idx-sp !
 
     inc-parse-idx
 
-    S" newline" str-equiv? if true exit then
-    S" space" str-equiv? if true exit then
-    S" tab" str-equiv? if true exit then
+    S" newline" str-equiv? if pop-parse-idx true exit then
+    S" space" str-equiv? if pop-parse-idx true exit then
+    S" tab" str-equiv? if pop-parse-idx true exit then
 
     charavailable? false = if pop-parse-idx false exit then
 
@@ -209,9 +207,9 @@ parse-idx-stack parse-idx-sp !
     inc-parse-idx
     inc-parse-idx
 
-    S" newline" str-equiv? if '\n' character-type exit then
-    S" space" str-equiv? if bl character-type exit then
-    S" tab" str-equiv? if 9 character-type exit then
+    S" newline" str-equiv? if 7 parse-idx +! '\n' character-type exit then
+    S" space" str-equiv? if 5 parse-idx +! bl character-type exit then
+    S" tab" str-equiv? if 3 parse-idx +! 9 character-type exit then
 
     nextchar character-type
 
@@ -285,10 +283,8 @@ parse-idx-stack parse-idx-sp !
         bl of ." #\space" endof
         '\n' of ." #\newline" endof
         
-        ." #\" emit
+        dup ." #\" emit
     endcase
-
-    trace
 ;
 
 : print ( obj -- )
