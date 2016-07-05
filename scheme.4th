@@ -2,13 +2,35 @@ vocabulary scheme
 scheme definitions
 
 include term-colours.4th
+include defer-is.4th
 
 0 constant number-type
 1 constant boolean-type
 2 constant character-type
 3 constant nil-type
+4 constant pair-type
 : istype? ( obj -- obj b )
     over = ;
+
+100 constant N
+create car-cells N allot
+create car-type-cells N allot
+create cdr-cells N allot
+create cdr-type-cells N allot
+
+variable nextfree
+0 nextfree !
+
+: cons ( car-obj cdr-obj -- pair-obj )
+    cdr-type-cells nextfree @ + !
+    cdr-cells nextfree @ + !
+    car-type-cells nextfree @ + !
+    car-cells nextfree @ + !
+
+    nextfree @ pair-type
+
+    1 nextfree +!
+;
 
 \ ---- Read ----
 
@@ -173,13 +195,8 @@ parse-idx-stack parse-idx-sp !
     pop-parse-idx true
 ;
 
-: empty-list? ( -- bool )
-    nextchar [char] ( <> if false exit then
-    push-parse-idx
-    inc-parse-idx
-    eatspaces
-    nextchar [char] ) <> if pop-parse-idx false exit then
-    pop-parse-idx true ;
+: pair? ( -- bool )
+    nextchar [char] ( = ;
 
 
 : readnum ( -- num-atom )
@@ -226,16 +243,50 @@ parse-idx-stack parse-idx-sp !
     inc-parse-idx
 ;
 
-: readnil ( -- nil-atom )
+defer read
+
+: readpair ( -- obj )
     inc-parse-idx
     eatspaces
-    inc-parse-idx
 
-    nil-type
+    \ Empty lists
+    nextchar [char] ) = if
+        inc-parse-idx
+
+        delim? false = if
+            bold fg red
+            ." No delimiter following right paren. Aborting." cr
+            reset-term abort
+        then
+
+        nil-type exit
+    then
+
+    \ Read first pair element
+    read
+
+    \ Pairs
+    eatspaces
+    nextchar [char] . = if
+        inc-parse-idx
+
+        delim? false = if
+            bold fg red
+            ." No delimiter following '.'. Aborting." cr
+            reset-term abort
+        then
+
+        eatspaces read
+
+    else
+        recurse
+    then
+
+    cons
 ;
 
 \ Parse a scheme expression
-: read ( -- obj )
+: (read) ( -- obj )
 
     eatspaces
 
@@ -254,8 +305,8 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
-    empty-list? if
-        readnil
+    pair? if
+        readpair
         exit
     then
 
@@ -269,6 +320,8 @@ parse-idx-stack parse-idx-sp !
     ." '. Aborting." reset-term cr
     abort
 ;
+
+' (read) is read
 
 \ ---- Eval ----
 
