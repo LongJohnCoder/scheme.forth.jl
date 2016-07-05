@@ -134,11 +134,13 @@ parse-idx-stack parse-idx-sp !
 ;
 
 : str-equiv? ( str -- bool )
+
     push-parse-idx
 
-    true
+    true -rot
 
     swap dup rot + swap
+
     do
         i @ nextchar <> if
             drop false
@@ -148,7 +150,7 @@ parse-idx-stack parse-idx-sp !
         inc-parse-idx
     loop
 
-    delim? <> if drop false then
+    delim? false = if drop false then
 
     pop-parse-idx
 ;
@@ -252,6 +254,7 @@ parse-idx-stack parse-idx-sp !
 : self-evaluating? ( obj -- obj bool )
     number-type istype? if true exit then
     boolean-type istype? if true exit then
+    character-type istype? if true exit then
     false ;
 
 : eval
@@ -281,7 +284,11 @@ parse-idx-stack parse-idx-sp !
         9 of ." #\tab" endof
         bl of ." #\space" endof
         '\n' of ." #\newline" endof
+        
+        ." #\" emit
     endcase
+
+    trace
 ;
 
 : print ( obj -- )
