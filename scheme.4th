@@ -6,6 +6,7 @@ include term-colours.4th
 0 constant number-type
 1 constant boolean-type
 2 constant character-type
+3 constant nil-type
 : istype? ( obj -- obj b )
     over = ;
 
@@ -172,6 +173,15 @@ parse-idx-stack parse-idx-sp !
     pop-parse-idx true
 ;
 
+: empty-list? ( -- bool )
+    nextchar [char] ( <> if false exit then
+    push-parse-idx
+    inc-parse-idx
+    eatspaces
+    nextchar [char] ) <> if pop-parse-idx false exit then
+    pop-parse-idx true ;
+
+
 : readnum ( -- num-atom )
     minus? dup if
         inc-parse-idx
@@ -216,6 +226,14 @@ parse-idx-stack parse-idx-sp !
     inc-parse-idx
 ;
 
+: readnil ( -- nil-atom )
+    inc-parse-idx
+    eatspaces
+    inc-parse-idx
+
+    nil-type
+;
+
 \ Parse a scheme expression
 : read ( -- obj )
 
@@ -236,6 +254,11 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
+    empty-list? if
+        readnil
+        exit
+    then
+
     eof? if
         bold fg blue ." Moriturus te saluto." reset-term ."  ok" cr
         quit
@@ -253,6 +276,7 @@ parse-idx-stack parse-idx-sp !
     number-type istype? if true exit then
     boolean-type istype? if true exit then
     character-type istype? if true exit then
+    nil-type istype? if true exit then
     false ;
 
 : eval
@@ -287,11 +311,15 @@ parse-idx-stack parse-idx-sp !
     endcase
 ;
 
+: printnil ( nilobj -- )
+    drop ." ()" ;
+
 : print ( obj -- )
     ." ; "
     number-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
+    nil-type istype? if printnil exit then
 ;
 
 \ ---- REPL ----
