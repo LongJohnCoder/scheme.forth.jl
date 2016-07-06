@@ -26,3 +26,10 @@ hide abort-defer
         ['] lit , , ['] defer! ,
     then
 ;
+
+: :noname
+    here current @ 1+ @ ,
+    current @ 1+ !
+    0 ,
+    here docol ,
+    [compile] ] ;

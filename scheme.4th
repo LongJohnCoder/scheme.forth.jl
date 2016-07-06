@@ -373,6 +373,9 @@ defer read
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     nil-type istype? if printnil exit then
+
+    bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
+    abort
 ;
 
 \ ---- REPL ----
