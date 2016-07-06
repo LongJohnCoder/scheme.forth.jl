@@ -32,6 +32,19 @@ variable nextfree
     1 nextfree +!
 ;
 
+: car ( pair-obj -- car-obj )
+    drop
+    dup car-cells + @ swap
+    car-type-cells + @
+;
+
+: cdr ( pair-obj -- car-obj )
+    drop
+    dup cdr-cells + @ swap
+    cdr-type-cells + @
+;
+
+
 \ ---- Read ----
 
 variable parse-idx
@@ -277,16 +290,17 @@ defer read
         then
 
         eatspaces read
-
     else
         recurse
     then
+
+    eatspaces
 
     cons
 ;
 
 \ Parse a scheme expression
-: (read) ( -- obj )
+:noname ( -- obj )
 
     eatspaces
 
@@ -319,9 +333,8 @@ defer read
     nextchar emit
     ." '. Aborting." reset-term cr
     abort
-;
 
-' (read) is read
+; is read
 
 \ ---- Eval ----
 
@@ -333,9 +346,10 @@ defer read
     false ;
 
 : eval
-    self-evaluating? if
-        exit
-    then
+    \ self-evaluating? if
+    \     exit
+    \ then
+    exit
 
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
@@ -343,7 +357,7 @@ defer read
 
 \ ---- Print ----
 
-: printnum ( numobj -- ) drop . ;
+: printnum ( numobj -- ) drop 0 .R ;
 
 : printbool ( numobj -- )
     drop if
@@ -367,16 +381,27 @@ defer read
 : printnil ( nilobj -- )
     drop ." ()" ;
 
-: print ( obj -- )
-    ." ; "
+defer print
+: printpair ( pairobj -- )
+    ." ("
+    2dup
+    car print
+    cdr
+    nil-type istype? if 2drop ." )" exit then
+    pair-type istype? if recurse ." )" exit then
+    ."  . " print ." )"
+;
+
+:noname ( obj -- )
     number-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     nil-type istype? if printnil exit then
+    pair-type istype? if printpair exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
-;
+; is print
 
 \ ---- REPL ----
 
@@ -390,7 +415,7 @@ defer read
         cr bold fg green ." > " reset-term
         read
         eval
-        fg cyan print reset-term
+        fg cyan ." ; " print reset-term
     again
 ;
 
