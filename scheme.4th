@@ -9,6 +9,7 @@ include defer-is.4th
 2 constant character-type
 3 constant nil-type
 4 constant pair-type
+5 constant symbol-type
 : istype? ( obj -- obj b )
     over = ;
 
