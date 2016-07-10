@@ -7,9 +7,10 @@ include defer-is.4th
 0 constant number-type
 1 constant boolean-type
 2 constant character-type
-3 constant nil-type
-4 constant pair-type
-5 constant symbol-type
+3 constant string-type
+4 constant nil-type
+5 constant pair-type
+6 constant symbol-type
 : istype? ( obj -- obj b )
     over = ;
 
@@ -212,6 +213,8 @@ parse-idx-stack parse-idx-sp !
 : pair? ( -- bool )
     nextchar [char] ( = ;
 
+: string? ( -- bool )
+    nextchar [char] " = ;
 
 : readnum ( -- num-atom )
     minus? dup if
@@ -255,6 +258,38 @@ parse-idx-stack parse-idx-sp !
     nextchar character-type
 
     inc-parse-idx
+;
+
+: readstring ( -- str-obj )
+    nextchar [char] " = if
+        inc-parse-idx
+
+        delim? false = if
+            bold fg red
+            ." No delimiter following right double quote. Aborting." cr
+            reset-term abort
+        then
+
+        dec-parse-idx
+
+        0 nil-type exit
+    then
+
+    nextchar [char] \ = if
+        inc-parse-idx
+        nextchar case
+            [char] n of '\n' endof
+            [char] " of [char] " endof
+            [char] \
+        endcase
+    else
+        nextchar
+    then
+    inc-parse-idx character-type
+
+    recurse
+
+    cons
 ;
 
 defer read
@@ -321,6 +356,20 @@ defer read
         exit
     then
 
+    string? if
+        inc-parse-idx
+        readstring
+        drop string-type
+
+        nextchar [char] " <> if
+            bold red ." Missing closing double-quote." reset-term cr
+            abort
+        then
+
+        inc-parse-idx
+        exit
+    then
+
     pair? if
         inc-parse-idx
 
@@ -358,6 +407,7 @@ defer read
     number-type istype? if true exit then
     boolean-type istype? if true exit then
     character-type istype? if true exit then
+    string-type istype? if true exit then
     nil-type istype? if true exit then
     false ;
 
@@ -394,6 +444,24 @@ defer read
     endcase
 ;
 
+: (printstring) ( stringobj -- )
+    nil-type istype? if 2drop exit then
+
+    2dup car drop dup
+    case
+        '\n' of ." \n" drop endof
+        [char] \ of ." \\" drop endof
+        [char] " of [char] \ emit [char] " emit drop endof
+        emit
+    endcase
+
+    cdr recurse
+;
+: printstring ( stringobj -- )
+    [char] " emit
+    (printstring)
+    [char] " emit ;
+
 : printnil ( nilobj -- )
     2drop ." ()" ;
 
@@ -411,6 +479,7 @@ defer print
     number-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
+    string-type istype? if printstring exit then
     nil-type istype? if printnil exit then
     pair-type istype? if ." (" printpair ." )" exit then
 
