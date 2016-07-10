@@ -259,7 +259,6 @@ parse-idx-stack parse-idx-sp !
 defer read
 
 : readpair ( -- obj )
-    inc-parse-idx
     eatspaces
 
     \ Empty lists
@@ -272,7 +271,9 @@ defer read
             reset-term abort
         then
 
-        nil-type exit
+        dec-parse-idx
+
+        0 nil-type exit
     then
 
     \ Read first pair element
@@ -320,7 +321,21 @@ defer read
     then
 
     pair? if
+        inc-parse-idx
+
+        eatspaces
+
         readpair
+
+        eatspaces
+
+        nextchar [char] ) <> if
+            bold red ." Missing closing paren." reset-term cr
+            abort
+        then
+
+        inc-parse-idx
+
         exit
     then
 
@@ -383,13 +398,12 @@ defer read
 
 defer print
 : printpair ( pairobj -- )
-    ." ("
     2dup
     car print
     cdr
     nil-type istype? if 2drop ." )" exit then
-    pair-type istype? if recurse ." )" exit then
-    ."  . " print ." )"
+    pair-type istype? if space recurse exit then
+    ."  . " print
 ;
 
 :noname ( obj -- )
@@ -397,7 +411,7 @@ defer print
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     nil-type istype? if printnil exit then
-    pair-type istype? if printpair exit then
+    pair-type istype? if ." (" printpair ." )" exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
