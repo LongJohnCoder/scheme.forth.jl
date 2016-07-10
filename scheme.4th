@@ -394,14 +394,14 @@ defer read
 ;
 
 : printnil ( nilobj -- )
-    drop ." ()" ;
+    2drop ." ()" ;
 
 defer print
 : printpair ( pairobj -- )
     2dup
     car print
     cdr
-    nil-type istype? if 2drop ." )" exit then
+    nil-type istype? if 2drop exit then
     pair-type istype? if space recurse exit then
     ."  . " print
 ;
