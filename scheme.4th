@@ -4,6 +4,8 @@ scheme definitions
 include term-colours.4th
 include defer-is.4th
 
+\ ------ Types ------
+
 0 constant number-type
 1 constant boolean-type
 2 constant character-type
@@ -13,6 +15,8 @@ include defer-is.4th
 6 constant symbol-type
 : istype? ( obj -- obj b )
     over = ;
+
+\ ------ Memory ------
 
 100 constant N
 create car-cells N allot
@@ -46,6 +50,19 @@ variable nextfree
     cdr-type-cells + @
 ;
 
+: nil 0 nil-type ;
+
+: objvar create 0 , 0 , ;
+
+: value@ ( objvar -- val ) @ ;
+: type@ ( objvar -- type ) 1+ @ ;
+: value! ( newval objvar -- ) ! ;
+: type! ( newtype objvar -- ) 1+ ! ;
+: setobj ( newobj objvar -- ) dup rot swap 1+ ! ! ; 
+: fetchobj ( objvar -- obj ) dup @ swap 1+ @ ; 
+
+objvar symbol-table
+nil symbol-table setobj
 
 \ ---- Read ----
 
@@ -216,6 +233,30 @@ parse-idx-stack parse-idx-sp !
 : string? ( -- bool )
     nextchar [char] " = ;
 
+: initial? ( -- bool )
+    nextchar [char] A >= nextchar [char] Z <= and if true exit then
+    nextchar [char] a >= nextchar [char] z <= and if true exit then
+    nextchar [char] * = if true exit then
+    nextchar [char] / = if true exit then
+    nextchar [char] > = if true exit then
+    nextchar [char] < = if true exit then
+    nextchar [char] = = if true exit then
+    nextchar [char] ? = if true exit then
+    nextchar [char] ! = if true exit then
+    false
+;
+
+: symbol? ( -- bool )
+    initial? if true exit then
+    nextchar [char] + =
+    nextchar [char] - = or if
+        inc-parse-idx
+        delim? if dec-parse-idx true exit then
+        dec-parse-idx
+    then
+    false
+;
+
 : readnum ( -- num-atom )
     minus? dup if
         inc-parse-idx
@@ -260,7 +301,7 @@ parse-idx-stack parse-idx-sp !
     inc-parse-idx
 ;
 
-: readstring ( -- str-obj )
+: readstring ( -- charlist )
     nextchar [char] " = if
         inc-parse-idx
 
@@ -286,6 +327,16 @@ parse-idx-stack parse-idx-sp !
         nextchar
     then
     inc-parse-idx character-type
+
+    recurse
+
+    cons
+;
+
+: readsymbol ( -- charlist )
+    delim? if nil exit then
+
+    nextchar inc-parse-idx character-type
 
     recurse
 
@@ -370,6 +421,16 @@ defer read
         exit
     then
 
+    symbol? if
+        readsymbol
+        drop symbol-type
+        2dup
+        symbol-table fetch
+        cons
+        symbol-table set
+        exit
+    then
+
     pair? if
         inc-parse-idx
 
@@ -404,18 +465,13 @@ defer read
 \ ---- Eval ----
 
 : self-evaluating? ( obj -- obj bool )
-    number-type istype? if true exit then
-    boolean-type istype? if true exit then
-    character-type istype? if true exit then
-    string-type istype? if true exit then
-    nil-type istype? if true exit then
-    false ;
+    true \ everything self-evaluating for now
+;
 
 : eval
-    \ self-evaluating? if
-    \     exit
-    \ then
-    exit
+    self-evaluating? if
+        exit
+    then
 
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
@@ -462,6 +518,13 @@ defer read
     (printstring)
     [char] " emit ;
 
+: printsymbol ( symbolobj -- )
+    nil-type istype? if 2drop exit then
+
+    2dup car drop emit
+    cdr recurse
+;
+
 : printnil ( nilobj -- )
     2drop ." ()" ;
 
@@ -480,6 +543,7 @@ defer print
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then
+    symbol-type istype? if printsymbol exit then
     nil-type istype? if printnil exit then
     pair-type istype? if ." (" printpair ." )" exit then
 
