@@ -13,7 +13,7 @@ include defer-is.4th
 4 constant nil-type
 5 constant pair-type
 6 constant symbol-type
-: istype? ( obj -- obj b )
+: istype? ( obj type -- obj bool )
     over = ;
 
 \ ------ Memory ------
@@ -51,6 +51,7 @@ variable nextfree
 ;
 
 : nil 0 nil-type ;
+: nil? nil-type istype? ;
 
 : objvar create 0 , 0 , ;
 
@@ -342,6 +343,50 @@ parse-idx-stack parse-idx-sp !
 
     cons
 ;
+
+: charlist-equiv ( charlist charlist -- bool )
+
+    2over 2over
+
+    \ One or both nil
+    nil? -rot 2drop
+    if
+        nil? -rot 2drop
+        if
+            true exit
+        else
+            false exit
+        then
+    else
+        nil? -rot 2drop
+        if
+            false exit
+        then
+    then
+
+    2over 2over
+
+    \ Neither nil
+    car 2swap car rot = -rot = and if
+            cdr 2swap cdr recurse
+        else
+            2drop 2drop false
+    then
+;
+
+: (symbol-in-table?) ( charlist symbol-table -- charlist symbol-obj )
+
+    begin
+        nil? false =
+    while
+        2over 2over
+        car
+        charlist-equiv if
+    repeat
+;
+
+: symbol-in-table? ( charlist -- charlist bool )
+    symbol-table (symbol-in-table?) ;
 
 defer read
 
