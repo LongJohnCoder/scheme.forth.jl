@@ -367,30 +367,40 @@ parse-idx-stack parse-idx-sp !
     2over 2over
 
     \ Neither nil
-    car 2swap car rot = -rot = and if
+    car drop -rot car drop = if
             cdr 2swap cdr recurse
         else
             2drop 2drop false
     then
 ;
 
-: (symbol-in-table?) ( charlist symbol-table -- charlist symbol-obj )
+: charlist>symbol ( charlist -- symbol-obj )
+
+    symbol-table fetchobj
 
     begin
         nil? false =
     while
         2over 2over
-        car
+        car drop pair-type
         charlist-equiv if
+            2swap 2drop
+            car
+            exit
+        else
+            cdr
+        then
     repeat
-;
 
-: symbol-in-table? ( charlist -- charlist bool )
-    symbol-table (symbol-in-table?) ;
+    2drop
+    drop symbol-type 2dup
+    symbol-table fetchobj cons
+    symbol-table setobj
+;
 
 defer read
 
-: readpair ( -- obj )
+: readpair ( -- pairobj )
     eatspaces
 
     \ Empty lists
@@ -467,12 +477,7 @@ defer read
     then
 
     symbol? if
-        readsymbol
-        drop symbol-type
-        2dup
-        symbol-table fetch
-        cons
-        symbol-table set
+        readsymbol charlist>symbol
         exit
     then
 
