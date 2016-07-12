@@ -18,7 +18,7 @@ include defer-is.4th
 
 \ ------ Memory ------
 
-100 constant N
+1000 constant N
 create car-cells N allot
 create car-type-cells N allot
 create cdr-cells N allot
@@ -64,6 +64,33 @@ variable nextfree
 
 objvar symbol-table
 nil symbol-table setobj
+
+\ ---- Pre-defined symbols ----
+
+: (create-symbol) ( addr n -- symbol-obj )
+    dup 0= if
+        2drop nil
+    else
+        2dup drop @ character-type 2swap
+        swap 1+ swap 1-
+        recurse
+
+        cons
+    then
+;
+
+: create-symbol ( -- )
+    bl word
+    count
+    (create-symbol)
+    drop symbol-type
+
+    symbol-table fetchobj
+    cons
+    symbol-table setobj
+;
+
+create-symbol quote
 
 \ ---- Read ----
 
