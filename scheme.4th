@@ -353,14 +353,14 @@ parse-idx-stack parse-idx-sp !
     if
         nil? -rot 2drop
         if
-            true exit
+            2drop 2drop true exit
         else
-            false exit
+            2drop 2drop false exit
         then
     else
         nil? -rot 2drop
         if
-            false exit
+            2drop 2drop false exit
         then
     then
 
