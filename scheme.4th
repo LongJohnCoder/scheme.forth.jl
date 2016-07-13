@@ -50,6 +50,11 @@ variable nextfree
     cdr-type-cells + @
 ;
 
+: caar car car ;
+: cadr cdr car ;
+: cdar car cdr ;
+: cddr cdr cdr ;
+
 : nil 0 nil-type ;
 : nil? nil-type istype? ;
 
@@ -64,6 +69,9 @@ variable nextfree
 
 objvar symbol-table
 nil symbol-table setobj
+
+: objeq? ( obj obj -- bool )
+    rot = -rot = and ;
 
 \ ---- Pre-defined symbols ----
 
@@ -82,15 +90,21 @@ nil symbol-table setobj
 : create-symbol ( -- )
     bl word
     count
+
     (create-symbol)
     drop symbol-type
+
+    2dup
 
     symbol-table fetchobj
     cons
     symbol-table setobj
+
+    create swap , ,
+    does> dup @ swap 1+ @
 ;
 
-create-symbol quote
+create-symbol quote quote
 
 \ ---- Read ----
 
@@ -527,6 +541,11 @@ defer read
         exit
     then
 
+    nextchar [char] ' = if
+        inc-parse-idx
+        quote recurse nil cons cons exit
+    then
+
     eof? if
         bold fg blue ." Moriturus te saluto." reset-term ."  ok" cr
         quit
@@ -542,11 +561,36 @@ defer read
 \ ---- Eval ----
 
 : self-evaluating? ( obj -- obj bool )
-    true \ everything self-evaluating for now
+    boolean-type istype? if true exit then
+    number-type istype? if true exit then
+    character-type istype? if true exit then
+    string-type istype? if true exit then
+    nil-type istype? if true exit then
+
+    false
 ;
 
+: tagged-list? ( obj tag-obj -- obj bool )
+    2over 
+    pair-type istype? false = if
+        2drop 2drop false
+    else
+        car objeq?
+    then ;
+
+: quote? ( obj -- obj bool )
+    quote tagged-list?  ;
+
+: quote-body ( quote-obj -- quote-body-obj )
+    cadr ;
+    
 : eval
     self-evaluating? if
+        exit
+    then
+
+    quote? if
+        quote-body
         exit
     then
 
