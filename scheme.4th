@@ -121,7 +121,7 @@ create-symbol set! set!-symbol
 
 \ ---- Environments ----
 
-objvar global-environment
+objvar global-env
 
 : enclosing-env ( env -- env )
     cdr ;
@@ -139,8 +139,59 @@ objvar global-environment
     cdr ;
 
 : add-binding ( var val frame -- )
+    2swap 2over frame-vals cons
+    2over set-car!
+    2swap 2over frame-vars cons
+    swap set-cdr!
 ;
-    
+
+: extend-env ( vars vals env -- env )
+    >R >R
+    make-frame
+    R> R>
+    cons
+;
+
+objvar vars
+objvar vals
+
+: lookup-var-frame ( var frame -- val? bool )
+    2dup frame-vars vars setobj
+    frame-vals vals setobj
+
+    begin
+        vars fetchobj nil objeq? false =
+    while
+        2dup vars fetchobj car objeq? if
+            2drop
+            vals fetchobj car true
+            exit
+        then
+
+        vars fetchobj cdr vars setobj
+        vals fetchobj cdr vals setobj
+    repeat
+
+    2drop false
+;
+
+: lookup-var ( var env -- val )
+    begin
+        2dup nil objeq? false =
+    while
+        2over 2over first-frame
+        lookup-var-frame if
+            -rot 2drop -rot 2drop
+            exit
+        then
+
+        enclosing-env
+    repeat
+
+    2drop 
+    bold fg red ." Unbound variable " print ." . Aborting." reset-term cr
+    abort
+;
 
 \ ---- Read ----
 
@@ -589,13 +640,17 @@ defer read
 : quote-body ( quote-obj -- quote-body-obj )
     cadr ;
     
-: eval
+: eval ( obj env -- result )
+    2swap
+
     self-evaluating? if
+        2swap 2drop
         exit
     then
 
     quote? if
         quote-body
+        2swap 2drop
         exit
     then
 
@@ -688,7 +743,7 @@ defer print
     begin
         cr bold fg green ." > " reset-term
         read
-        eval
+        global-env fetchobj eval
         fg cyan ." ; " print reset-term
     again
 ;
