@@ -275,30 +275,6 @@ parse-idx-stack parse-idx-sp !
 : string? ( -- bool )
     nextchar [char] " = ;
 
-: initial? ( -- bool )
-    nextchar [char] A >= nextchar [char] Z <= and if true exit then
-    nextchar [char] a >= nextchar [char] z <= and if true exit then
-    nextchar [char] * = if true exit then
-    nextchar [char] / = if true exit then
-    nextchar [char] > = if true exit then
-    nextchar [char] < = if true exit then
-    nextchar [char] = = if true exit then
-    nextchar [char] ? = if true exit then
-    nextchar [char] ! = if true exit then
-    false
-;
-
-: symbol? ( -- bool )
-    initial? if true exit then
-    nextchar [char] + =
-    nextchar [char] - = or if
-        inc-parse-idx
-        delim? if dec-parse-idx true exit then
-        dec-parse-idx
-    then
-    false
-;
-
 : readnum ( -- num-atom )
     minus? dup if
         inc-parse-idx
@@ -517,11 +493,6 @@ defer read
         exit
     then
 
-    symbol? if
-        readsymbol charlist>symbol
-        exit
-    then
-
     pair? if
         inc-parse-idx
 
@@ -551,10 +522,8 @@ defer read
         quit
     then
 
-    bold fg red ." Error parsing string starting at character '"
-    nextchar emit
-    ." '. Aborting." reset-term cr
-    abort
+    \ Anything else is assumed to be a symbol
+    readsymbol charlist>symbol
 
 ; is read
 
