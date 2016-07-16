@@ -16,7 +16,7 @@ include defer-is.4th
 : istype? ( obj type -- obj bool )
     over = ;
 
-\ ------ Memory ------
+\ ------ Cons cell memory ------
 
 1000 constant N
 create car-cells N allot
@@ -50,6 +50,18 @@ variable nextfree
     cdr-type-cells + @
 ;
 
+: set-car! ( obj pair-obj -- )
+    drop dup
+    rot swap  car-type-cells + !
+    car-cells + !
+;
+
+: set-cdr! ( obj pair-obj -- )
+    drop dup
+    rot swap  cdr-type-cells + !
+    cdr-cells + !
+;
+
 : caar car car ;
 : cadr cdr car ;
 : cdar car cdr ;
@@ -58,7 +70,7 @@ variable nextfree
 : nil 0 nil-type ;
 : nil? nil-type istype? ;
 
-: objvar create 0 , 0 , ;
+: objvar create nil swap , , ;
 
 : value@ ( objvar -- val ) @ ;
 : type@ ( objvar -- type ) 1+ @ ;
@@ -67,13 +79,12 @@ variable nextfree
 : setobj ( newobj objvar -- ) dup rot swap 1+ ! ! ; 
 : fetchobj ( objvar -- obj ) dup @ swap 1+ @ ; 
 
-objvar symbol-table
-nil symbol-table setobj
-
 : objeq? ( obj obj -- bool )
     rot = -rot = and ;
 
 \ ---- Pre-defined symbols ----
+
+objvar symbol-table
 
 : (create-symbol) ( addr n -- symbol-obj )
     dup 0= if
@@ -104,7 +115,32 @@ nil symbol-table setobj
     does> dup @ swap 1+ @
 ;
 
-create-symbol quote quote
+create-symbol quote quote-symbol
+create-symbol define define-symbol
+create-symbol set! set!-symbol
+
+\ ---- Environments ----
+
+objvar global-environment
+
+: enclosing-env ( env -- env )
+    cdr ;
+
+: first-frame ( env -- frame )
+    car ;
+
+: make-frame ( vars vals -- frame )
+    cons ;
+
+: frame-vars ( frame -- vars )
+    car ;
+
+: frame-vals ( frame -- vals )
+    cdr ;
+
+: add-binding ( var val frame -- )
+;
+    
 
 \ ---- Read ----
 
@@ -514,7 +550,7 @@ defer read
 
     nextchar [char] ' = if
         inc-parse-idx
-        quote recurse nil cons cons exit
+        quote-symbol recurse nil cons cons exit
     then
 
     eof? if
@@ -548,7 +584,7 @@ defer read
     then ;
 
 : quote? ( obj -- obj bool )
-    quote tagged-list?  ;
+    quote-symbol tagged-list?  ;
 
 : quote-body ( quote-obj -- quote-body-obj )
     cadr ;
