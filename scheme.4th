@@ -188,10 +188,52 @@ objvar vals
         enclosing-env
     repeat
 
-    2drop 
-    bold fg red ." Unbound variable " print ." . Aborting." reset-term cr
+    bold fg red ." Unbound variable.  Aborting." reset-term cr
     abort
 ;
+
+objvar val
+
+: set-var-frame ( var frame -- )
+    2dup frame-vars vars setobj
+    frame-vals vals setobj
+
+    begin
+        vars fetchobj nil objeq? false =
+    while
+        2dup vars fetchobj car objeq? if
+            2drop
+            \ *** TODO ***
+        then
+
+        vars fetchobj cdr vars setobj
+        vals fetchobj cdr vals setobj
+    repeat
+;
+
+
+: set-var ( var val env -- )
+
+    2swap val setobj
+    
+    begin
+        2dup nil objeq? false =
+    while
+        2over 2over first-frame
+        set-var-frame if
+            exit
+        then
+
+        enclosing-env
+    repeat
+
+    bold fg red ." Unbound variable. Aborting." reset-term cr
+    abort
+;
+
+hide vars
+hide vals
+hide val
 
 \ ---- Read ----
 
@@ -609,7 +651,7 @@ defer read
         quit
     then
 
-    \ Anything else is assumed to be a symbol
+    \ Anything else is parsed as a symbol
     readsymbol charlist>symbol
 
 ; is read
