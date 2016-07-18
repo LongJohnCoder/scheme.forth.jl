@@ -185,7 +185,7 @@ objvar vals
         2dup nil objeq? false =
     while
         2over 2over first-frame
-        lookup-var-frame if
+        get-vars-vals-frame if
             2drop 2drop
             vars fetchobj vals fetchobj true
             exit
@@ -222,15 +222,15 @@ hide vals
 objvar env
 
 : define-var ( var val env -- )
-    env objset 
+    env setobj 
 
-    2over env objfetch ( var val var env )
+    2over env fetchobj ( var val var env )
     get-vars-vals if
         2swap 2drop ( var val vals )
         set-car!
         2drop
     else
-        env objfetch
+        env fetchobj
         first-frame ( var val frame )
         add-binding
     then
@@ -704,13 +704,15 @@ defer read
     cdr cdr car ;
 
 : assignment? ( obj -- obj bool )
-    set-symbol tagged-list? ;
+    set!-symbol tagged-list? ;
 
 : assignment-var ( obj -- var )
     cdr car ;
     
 : assignment-val ( obj -- val )
     cdr cdr car ;
+
+defer eval
 
 : eval-definition ( obj env -- res )
     2swap 
@@ -739,7 +741,8 @@ defer read
 
     ok-symbol
 ;
-: eval ( obj env -- result )
+
+:noname ( obj env -- result )
     2swap
 
     self-evaluating? if
@@ -770,7 +773,7 @@ defer read
 
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
-;
+; is eval
 
 \ }}}
 
