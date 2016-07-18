@@ -16,7 +16,7 @@ include defer-is.4th
 : istype? ( obj type -- obj bool )
     over = ;
 
-\ ------ Cons cell memory ------
+\ ------ Cons cell memory ------ {{{
 
 1000 constant N
 create car-cells N allot
@@ -82,7 +82,9 @@ variable nextfree
 : objeq? ( obj obj -- bool )
     rot = -rot = and ;
 
-\ ---- Pre-defined symbols ----
+\ }}}
+
+\ ---- Pre-defined symbols ---- {{{
 
 objvar symbol-table
 
@@ -119,7 +121,9 @@ create-symbol quote quote-symbol
 create-symbol define define-symbol
 create-symbol set! set!-symbol
 
-\ ---- Environments ----
+\ }}}
+
+\ ---- Environments ---- {{{
 
 objvar global-env
 
@@ -155,7 +159,7 @@ objvar global-env
 objvar vars
 objvar vals
 
-: lookup-var-frame ( var frame -- val? bool )
+: get-vars-vals-frame ( var frame -- bool )
     2dup frame-vars vars setobj
     frame-vals vals setobj
 
@@ -163,8 +167,7 @@ objvar vals
         vars fetchobj nil objeq? false =
     while
         2dup vars fetchobj car objeq? if
-            2drop
-            vals fetchobj car true
+            2drop true
             exit
         then
 
@@ -175,67 +178,68 @@ objvar vals
     2drop false
 ;
 
-: lookup-var ( var env -- val )
+: get-vars-vals ( var env -- vars? vals? bool )
+
     begin
         2dup nil objeq? false =
     while
         2over 2over first-frame
         lookup-var-frame if
-            -rot 2drop -rot 2drop
+            2drop 2drop
+            vars fetchobj vals fetchobj true
             exit
         then
 
         enclosing-env
     repeat
 
-    bold fg red ." Unbound variable.  Aborting." reset-term cr
-    abort
-;
-
-objvar val
-
-: set-var-frame ( var frame -- )
-    2dup frame-vars vars setobj
-    frame-vals vals setobj
-
-    begin
-        vars fetchobj nil objeq? false =
-    while
-        2dup vars fetchobj car objeq? if
-            2drop
-            \ *** TODO ***
-        then
-
-        vars fetchobj cdr vars setobj
-        vals fetchobj cdr vals setobj
-    repeat
-;
-
-
-: set-var ( var val env -- )
-
-    2swap val setobj
-    
-    begin
-        2dup nil objeq? false =
-    while
-        2over 2over first-frame
-        set-var-frame if
-            exit
-        then
-
-        enclosing-env
-    repeat
-
-    bold fg red ." Unbound variable. Aborting." reset-term cr
-    abort
+    2drop 2drop
+    false
 ;
 
 hide vars
 hide vals
-hide val
 
-\ ---- Read ----
+: lookup-var ( var env -- val )
+    get-vars-vals if
+        2swap 2drop car
+    else
+        bold fg red ." Tried to read unbound variable." reset-term abort
+    then
+;
+
+: set-var ( var val env -- )
+    >R >R 2swap R> R> ( val var env )
+    get-vars-vals if
+        2swap 2drop ( val vals )
+        set-car!
+    else
+        bold fg red ." Tried to set unbound variable." reset-term abort
+    then
+;
+
+objvar env
+
+: define-var ( var val env -- )
+    env objset 
+
+    2over env objfetch ( var val var env )
+    get-vars-vals if
+        2swap 2drop ( var val vals )
+        set-car!
+        2drop
+    else
+        env objfetch
+        first-frame ( var val frame )
+        add-binding
+    then
+;
+
+hide env
+
+\ }}}
+
+\ ---- Read ---- {{{
 
 variable parse-idx
 variable stored-parse-idx
@@ -610,6 +614,7 @@ defer read
 
     string? if
         inc-parse-idx
+
         readstring
         drop string-type
 
@@ -619,6 +624,7 @@ defer read
         then
 
         inc-parse-idx
+
         exit
     then
 
@@ -656,7 +662,9 @@ defer read
 
 ; is read
 
-\ ---- Eval ----
+\ }}}
+
+\ ---- Eval ---- {{{
 
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
@@ -681,6 +689,15 @@ defer read
 
 : quote-body ( quote-obj -- quote-body-obj )
     cadr ;
+
+: variable? ( obj -- obj bool )
+    symbol-type istype? ;
+
+: definition? ( obj -- obj bool )
+    define-symbol tagged-list? ;
+
+: assignment? ( obj -- obj bool )
+    set-symbol tagged-list? ;
     
 : eval ( obj env -- result )
     2swap
@@ -696,11 +713,18 @@ defer read
         exit
     then
 
+    variable? if
+        2swap lookup-var
+        exit
+    then
+
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
 ;
 
-\ ---- Print ----
+\ }}}
+
+\ ---- Print ---- {{{
 
 : printnum ( numobj -- ) drop 0 .R ;
 
@@ -773,6 +797,8 @@ defer print
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
 ; is print
+
+\ }}}
 
 \ ---- REPL ----
 
