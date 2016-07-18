@@ -117,9 +117,10 @@ objvar symbol-table
     does> dup @ swap 1+ @
 ;
 
-create-symbol quote quote-symbol
-create-symbol define define-symbol
-create-symbol set! set!-symbol
+create-symbol quote     quote-symbol
+create-symbol define    define-symbol
+create-symbol set!      set!-symbol
+create-symbol ok        ok-symbol
 
 \ }}}
 
@@ -696,9 +697,48 @@ defer read
 : definition? ( obj -- obj bool )
     define-symbol tagged-list? ;
 
+: definition-var ( obj -- var )
+    cdr car ;
+
+: definition-val ( obj -- val )
+    cdr cdr car ;
+
 : assignment? ( obj -- obj bool )
     set-symbol tagged-list? ;
+
+: assignment-var ( obj -- var )
+    cdr car ;
     
+: assignment-val ( obj -- val )
+    cdr cdr car ;
+
+: eval-definition ( obj env -- res )
+    2swap 
+    2over 2over ( env obj env obj )
+    definition-val 2swap ( env obj valexp env )
+    eval  ( env obj val )
+    
+    2swap definition-var 2swap ( env var val )
+
+    >R >R 2swap R> R> 2swap ( var val env )
+    define-var
+
+    ok-symbol
+;
+    
+: eval-assignment ( obj env -- res )
+    2swap 
+    2over 2over ( env obj env obj )
+    assignment-val 2swap ( env obj valexp env )
+    eval  ( env obj val )
+    
+    2swap assignment-var 2swap ( env var val )
+
+    >R >R 2swap R> R> 2swap ( var val env )
+    set-var
+
+    ok-symbol
+;
 : eval ( obj env -- result )
     2swap
 
@@ -715,6 +755,16 @@ defer read
 
     variable? if
         2swap lookup-var
+        exit
+    then
+
+    definition? if
+        2swap eval-definition
+        exit
+    then
+
+    assignment? if
+        2swap eval-assignment
         exit
     then
 
