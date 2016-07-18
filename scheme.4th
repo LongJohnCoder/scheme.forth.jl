@@ -126,8 +126,6 @@ create-symbol ok        ok-symbol
 
 \ ---- Environments ---- {{{
 
-objvar global-env
-
 : enclosing-env ( env -- env )
     cdr ;
 
@@ -237,6 +235,10 @@ objvar env
 ;
 
 hide env
+
+objvar global-env
+nil nil nil extend-env
+global-env setobj
 
 \ }}}
 
