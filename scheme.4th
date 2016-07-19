@@ -277,7 +277,7 @@ global-env setobj
     global-env fetchobj define-var
 ;
 
-: add-prim ( args -- )
+:noname ( args -- )
     2dup nil objeq? if
         2drop
         0 number-type
@@ -286,9 +286,7 @@ global-env setobj
         -rot car drop
         + number-type
     then
-;
-
-' add-prim make-primitive +
+; make-primitive +
 
 \ }}}
 
@@ -375,9 +373,19 @@ parse-idx-stack parse-idx-sp !
     nextchar [char] - = ;
 
 : number? ( -- bool )
-    digit? minus? or false = if
-        false
-        exit
+    minus? if
+        inc-parse-idx
+
+        delim? if
+            dec-parse-idx
+            false exit
+        else
+            dec-parse-idx
+        then
+    else
+        digit? false = if
+            false exit
+        then
     then
 
     push-parse-idx
