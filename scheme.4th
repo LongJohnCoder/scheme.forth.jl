@@ -13,6 +13,7 @@ include defer-is.4th
 4 constant nil-type
 5 constant pair-type
 6 constant symbol-type
+7 constant primitive-type
 : istype? ( obj type -- obj bool )
     over = ;
 
@@ -257,7 +258,42 @@ global-env setobj
 
 \ }}}
 
+\ ---- Primitives ---- {{{
+
+: make-primitive ( cfa -- )
+    bl word
+    count
+
+    (create-symbol)
+    drop symbol-type
+    
+    2dup
+
+    symbol-table fetchobj
+    cons
+    symbol-table setobj
+
+    rot primitive-type ( var prim )
+    global-env fetchobj define-var
+;
+
+: add-prim ( args -- )
+    nil objeq? if
+        0 number-type
+    else
+        2dup cdr recurse drop
+        -rot car drop
+        + number-type
+    then
+;
+
+' add-prim make-primitive +
+
+\ }}}
+
 \ ---- Read ---- {{{
+
+defer read
 
 variable parse-idx
 variable stored-parse-idx
@@ -566,8 +602,6 @@ parse-idx-stack parse-idx-sp !
     symbol-table setobj
 ;
 
-defer read
-
 : readpair ( -- pairobj )
     eatspaces
 
@@ -784,8 +818,30 @@ defer eval
     then
 ;
 
-: true? ( boolobj -- boolean )
+: true? ( boolobj -- bool )
     false? invert ;
+
+: applicaion? ( obj -- obj bool)
+    pair-type istype? ;
+
+: operator ( obj -- operator )
+    car ;
+
+: operands ( obj -- operands )
+    cdr ;
+
+: nooperands? ( operands -- bool )
+    cdr nil objeq? ;
+
+: first-operand ( operands -- operand )
+    car ;
+
+: rest-operands ( operands -- other-operands )
+    cdr ;
+
+: list-of-vals ( args env -- vals )
+
+;
 
 :noname ( obj env -- result )
     2swap
@@ -830,6 +886,22 @@ defer eval
         2swap ['] eval goto
     then
 
+    application? if
+        2over 2over
+        operator 2swap eval
+
+        primitive-type istype? false = if
+            bold fg red ." Object not applicable. Aboring." reset-term cr
+            abort
+        then
+
+        -2rot
+        operands 2swap list-of-vals
+
+        2swap drop execute
+        exit
+    then
+
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
     abort
 ; is eval
@@ -837,6 +909,8 @@ defer eval
 \ }}}
 
 \ ---- Print ---- {{{
+
+defer print
 
 : printnum ( numobj -- ) drop 0 .R ;
 
@@ -887,7 +961,6 @@ defer eval
 : printnil ( nilobj -- )
     2drop ." ()" ;
 
-defer print
 : printpair ( pairobj -- )
     2dup
     car print
@@ -897,6 +970,9 @@ defer print
     ."  . " print
 ;
 
+: printprim ( primobj -- )
+    2drop ." <primitive procedure>" ;
+
 :noname ( obj -- )
     number-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
@@ -905,6 +981,7 @@ defer print
     symbol-type istype? if printsymbol exit then
     nil-type istype? if printnil exit then
     pair-type istype? if ." (" printpair ." )" exit then
+    primitive-type istype? if printprim exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
