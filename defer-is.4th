@@ -1,4 +1,4 @@
-\ Add words supporting deferred execution
+\ Words supporting deferred execution
 
 : abort-defer
     ." Tried to execute undefined deferred word." cr abort ;
@@ -33,3 +33,10 @@ hide abort-defer
     0 ,
     here docol ,
     [compile] ] ;
+
+
+\ Need this for tail call optimization
+
+: goto ( cfa -- )
+    R> drop execute ;
+

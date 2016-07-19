@@ -121,6 +121,7 @@ create-symbol quote     quote-symbol
 create-symbol define    define-symbol
 create-symbol set!      set!-symbol
 create-symbol ok        ok-symbol
+create-symbol if        if-symbol
 
 \ }}}
 
@@ -669,6 +670,8 @@ defer read
 
 \ ---- Eval ---- {{{
 
+defer eval
+
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
     number-type istype? if true exit then
@@ -714,8 +717,6 @@ defer read
 : assignment-val ( obj -- val )
     cdr cdr car ;
 
-defer eval
-
 : eval-definition ( obj env -- res )
     2swap 
     2over 2over ( env obj env obj )
@@ -744,6 +745,34 @@ defer eval
     ok-symbol
 ;
 
+: if? ( obj -- obj bool )
+    if-symbol tagged-list? ;
+
+: if-predicate ( ifobj -- pred )
+    cdr car ;
+
+: if-consequent ( ifobj -- conseq )
+    cdr cdr car ;
+
+: if-alternative ( ifobj -- alt|false )
+    cdr cdr cdr
+    2dup nil objeq? if
+        2drop false
+    else
+        car
+    then ;
+
+: false? ( boolobj -- boolean )
+    boolean-type istype? if
+        false boolean-type objeq?
+    else
+        2drop false
+    then
+;
+
+: true? ( boolobj -- boolean )
+    false? invert ;
+
 :noname ( obj env -- result )
     2swap
 
@@ -771,6 +800,20 @@ defer eval
     assignment? if
         2swap eval-assignment
         exit
+    then
+
+    if? if
+        2over 2over
+        if-predicate
+        2swap eval 
+
+        true? if
+            if-consequent
+        else
+            if-alternative
+        then
+
+        2swap ['] eval goto
     then
 
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
