@@ -277,41 +277,26 @@ global-env setobj
     global-env fetchobj define-var
 ;
 
-( = Arithmeic = )
+: arg-count-error
+            bold fg red ." Incorrect argument count." reset-term cr
+            abort
+;
 
-: add-prim ( args -- )
-    2dup nil objeq? if
-        2drop
-        0 fixnum-type
+: ensure-arg-count ( args n -- )
+    dup 0= if
+        drop nil objeq? false = if
+            arg-count-error
+        then
     else
-        2dup car drop
-        -rot cdr recurse drop
-        + fixnum-type
+        -rot 2dup nil objeq? if
+            arg-count-error
+        then
+        
+        cdr rot 1- recurse
     then
 ;
-' add-prim make-primitive +
 
-:noname ( args -- )
-    2dup nil objeq? if
-        2drop
-        0 fixnum-type
-    else
-        2dup car drop
-        -rot cdr add-prim drop
-        - fixnum-type
-    then
-; make-primitive -
-
-:noname ( args -- )
-    2dup nil objeq? if
-        2drop
-        1 fixnum-type
-    else
-        2dup car drop
-        -rot cdr recurse drop
-        * fixnum-type
-    then
-; make-primitive *
+include scheme-primitives.4th
 
 \ }}}
 
