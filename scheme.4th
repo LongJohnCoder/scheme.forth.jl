@@ -278,7 +278,8 @@ global-env setobj
 ;
 
 : add-prim ( args -- )
-    nil objeq? if
+    2dup nil objeq? if
+        2drop
         0 number-type
     else
         2dup cdr recurse drop
@@ -821,7 +822,7 @@ defer eval
 : true? ( boolobj -- bool )
     false? invert ;
 
-: applicaion? ( obj -- obj bool)
+: application? ( obj -- obj bool)
     pair-type istype? ;
 
 : operator ( obj -- operator )
