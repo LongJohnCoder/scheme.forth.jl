@@ -6,7 +6,7 @@ include defer-is.4th
 
 \ ------ Types ------
 
-0 constant number-type
+0 constant fixnum-type
 1 constant boolean-type
 2 constant character-type
 3 constant string-type
@@ -277,16 +277,41 @@ global-env setobj
     global-env fetchobj define-var
 ;
 
+( = Arithmeic = )
+
+: add-prim ( args -- )
+    2dup nil objeq? if
+        2drop
+        0 fixnum-type
+    else
+        2dup car drop
+        -rot cdr recurse drop
+        + fixnum-type
+    then
+;
+' add-prim make-primitive +
+
 :noname ( args -- )
     2dup nil objeq? if
         2drop
-        0 number-type
+        0 fixnum-type
     else
-        2dup cdr recurse drop
-        -rot car drop
-        + number-type
+        2dup car drop
+        -rot cdr add-prim drop
+        - fixnum-type
     then
-; make-primitive +
+; make-primitive -
+
+:noname ( args -- )
+    2dup nil objeq? if
+        2drop
+        1 fixnum-type
+    else
+        2dup car drop
+        -rot cdr recurse drop
+        * fixnum-type
+    then
+; make-primitive *
 
 \ }}}
 
@@ -372,7 +397,7 @@ parse-idx-stack parse-idx-sp !
 : minus? ( -- bool )
     nextchar [char] - = ;
 
-: number? ( -- bool )
+: fixnum? ( -- bool )
     minus? if
         inc-parse-idx
 
@@ -485,7 +510,7 @@ parse-idx-stack parse-idx-sp !
 
     swap if negate then
 
-    number-type
+    fixnum-type
 ;
 
 : readbool ( -- bool-atom )
@@ -658,7 +683,7 @@ parse-idx-stack parse-idx-sp !
 
     eatspaces
 
-    number? if
+    fixnum? if
         readnum
         exit
     then
@@ -731,7 +756,7 @@ defer eval
 
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
-    number-type istype? if true exit then
+    fixnum-type istype? if true exit then
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
@@ -991,7 +1016,7 @@ defer print
     2drop ." <primitive procedure>" ;
 
 :noname ( obj -- )
-    number-type istype? if printnum exit then
+    fixnum-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then
