@@ -82,6 +82,20 @@ variable nextfree
 : objeq? ( obj obj -- bool )
     rot = -rot = and ;
 
+: 2rot ( a1 a2 b1 b2 c1 c2 -- b1 b2 c1 c2 a1 a2 )
+    >R >R ( a1 a2 b1 b2 )
+    2swap ( b1 b2 a1 a2 )
+    R> R> ( b1 b2 a1 a2 c1 c2 )
+    2swap
+;
+
+: -2rot ( a1 a2 b1 b2 c1 c2 -- c1 c2 a1 a2 b1 b2 )
+    2swap ( a1 a2 c1 c2 b1 b2 )
+    >R >R ( a1 a2 c1 c2 )
+    2swap ( c1 c2 a1 a2 )
+    R> R>
+;
+
 \ }}}
 
 \ ---- Pre-defined symbols ---- {{{
@@ -725,7 +739,7 @@ defer eval
     
     2swap definition-var 2swap ( env var val )
 
-    >R >R 2swap R> R> 2swap ( var val env )
+    2rot ( var val env )
     define-var
 
     ok-symbol
@@ -739,7 +753,7 @@ defer eval
     
     2swap assignment-var 2swap ( env var val )
 
-    >R >R 2swap R> R> 2swap ( var val env )
+    2rot ( var val env )
     set-var
 
     ok-symbol
