@@ -831,7 +831,7 @@ defer eval
     cdr ;
 
 : nooperands? ( operands -- bool )
-    cdr nil objeq? ;
+    nil objeq? ;
 
 : first-operand ( operands -- operand )
     car ;
@@ -840,7 +840,15 @@ defer eval
     cdr ;
 
 : list-of-vals ( args env -- vals )
+    2swap
 
+    2dup nooperands? if
+        2swap 2drop
+    else
+        2over 2over first-operand 2swap eval
+        -2rot rest-operands 2swap recurse
+        cons
+    then
 ;
 
 :noname ( obj env -- result )
