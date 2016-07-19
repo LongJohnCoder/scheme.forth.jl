@@ -143,9 +143,9 @@ create-symbol ok        ok-symbol
 
 : add-binding ( var val frame -- )
     2swap 2over frame-vals cons
-    2over set-car!
+    2over set-cdr!
     2swap 2over frame-vars cons
-    swap set-cdr!
+    2swap set-car!
 ;
 
 : extend-env ( vars vals env -- env )
@@ -203,7 +203,7 @@ hide vals
     get-vars-vals if
         2swap 2drop car
     else
-        bold fg red ." Tried to read unbound variable." reset-term abort
+        bold fg red ." Tried to read unbound variable." reset-term cr abort
     then
 ;
 
@@ -213,7 +213,7 @@ hide vals
         2swap 2drop ( val vals )
         set-car!
     else
-        bold fg red ." Tried to set unbound variable." reset-term abort
+        bold fg red ." Tried to set unbound variable." reset-term cr abort
     then
 ;
 
@@ -872,3 +872,5 @@ defer print
 ;
 
 forth definitions
+
+\ vim:fdm=marker
