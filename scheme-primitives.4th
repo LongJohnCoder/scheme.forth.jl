@@ -48,6 +48,22 @@
     car primitive-type istype? -rot 2drop boolean-type
 ; make-primitive procedure?
 
+( = Type conversions = )
+
+:noname ( args -- fixnum )
+    2dup 1 ensure-arg-count
+    car character-type ensure-arg-type
+
+    drop fixnum-type
+; make-primitive char->integer
+
+:noname ( args -- fixnum )
+    2dup 1 ensure-arg-count
+    car fixnum-type ensure-arg-type
+
+    drop character-type
+; make-primitive integer->char
+
 ( = Arithmeic = )
 
 : add-prim ( args -- fixnum )

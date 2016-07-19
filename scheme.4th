@@ -296,6 +296,17 @@ global-env setobj
     then
 ;
 
+: arg-type-error
+            bold fg red ." Incorrect argument type." reset-term cr
+            abort
+;
+
+: ensure-arg-type ( arg type -- )
+    istype? false = if
+        arg-type-error
+    then
+;
+
 include scheme-primitives.4th
 
 \ }}}
