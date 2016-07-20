@@ -57,12 +57,37 @@
     drop fixnum-type
 ; make-primitive char->integer
 
-:noname ( args -- fixnum )
+:noname ( args -- char )
     2dup 1 ensure-arg-count
     car fixnum-type ensure-arg-type
 
     drop character-type
 ; make-primitive integer->char
+
+: build-fixnum-charlist ( num )
+    dup 0= if
+        nil
+    else
+        dup 10 / recurse
+        rot 10 mod [char] 0 + character-type 2swap
+        cons
+    then
+;
+:noname ( args -- string )
+    2dup 1 ensure-arg-count
+    car fixnum-type ensure-arg-type
+
+    drop
+
+    dup 0< swap abs ( bool num )
+    build-fixnum-charlist
+    rot drop
+    rot if
+        [char] - character-type 2swap cons
+    then
+
+    drop string-type
+; make-primitive number->string
 
 ( = Arithmeic = )
 

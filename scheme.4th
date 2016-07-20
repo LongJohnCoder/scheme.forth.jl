@@ -301,7 +301,7 @@ global-env setobj
             abort
 ;
 
-: ensure-arg-type ( arg type -- )
+: ensure-arg-type ( arg type -- arg )
     istype? false = if
         arg-type-error
     then
