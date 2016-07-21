@@ -377,12 +377,27 @@ parse-idx-stack parse-idx-sp !
     nextchar [char] ) = or
 ;
 
+: commentstart? ( -- bool )
+    nextchar [char] ; = ;
+
 : eatspaces
+
+    false \ Indicates whether or not we're eating a comment
+
     begin
-        whitespace?
+        dup whitespace? or commentstart? or
     while
+        dup nextchar '\n' = and if
+            invert \ Stop eating comment
+        else
+            dup false = commentstart? and if   
+                invert \ Begin eating comment
+            then
+        then
+
         inc-parse-idx
     repeat
+    drop
 ;
 
 : digit? ( -- bool )
