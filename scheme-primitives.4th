@@ -212,9 +212,12 @@
     mod fixnum-type
 ; make-primitive remainder
 
-:noname ( args -- bool )
+variable relcfa
+
+: test-relation ( args -- bool )
 
     2dup nil objeq? if
+        2drop
         true boolean-type exit
     then
 
@@ -234,8 +237,8 @@
         2dup nil objeq? false =
     while
         2dup car fixnum-type ensure-arg-type ( arg0 args' arg1 )
-        2rot 2dup 2rot ( args' arg0 arg0 arg1 )
-        objeq? false = if
+        2rot 2swap 2dup 2rot 2swap ( args' arg1 arg1 arg0 )
+        relcfa @ execute false = if
             2drop 2drop
             false boolean-type exit
         then
@@ -245,7 +248,36 @@
 
     2drop 2drop
     true boolean-type
+; 
+
+: fixnum-lt ( obj1 obj2 -- bool )
+    drop swap drop <
+;
+
+:noname
+    ['] fixnum-lt relcfa !
+    test-relation
+; make-primitive <
+
+: fixnum-gt ( obj1 obj2 -- bool )
+    drop swap drop >
+;
+
+:noname
+    ['] fixnum-gt relcfa !
+    test-relation
+; make-primitive >
+
+: fixnum-eq ( obj1 obj2 -- bool )
+    drop swap drop =
+;
+
+:noname
+    ['] fixnum-eq relcfa !
+    test-relation
 ; make-primitive =
+
+hide relcfa
 
 ( = Pairs and Lists = )
 
