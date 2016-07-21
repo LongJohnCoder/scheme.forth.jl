@@ -212,6 +212,41 @@
     mod fixnum-type
 ; make-primitive remainder
 
+:noname ( args -- bool )
+
+    2dup nil objeq? if
+        true boolean-type exit
+    then
+
+    ( args )
+
+    2dup car fixnum-type ensure-arg-type ( args arg0 )
+    2swap cdr ( arg0 args' )
+
+    2dup nil objeq? if
+        2drop 2drop
+        true boolean-type exit
+    then
+
+    ( arg0 args' )
+
+    begin
+        2dup nil objeq? false =
+    while
+        2dup car fixnum-type ensure-arg-type ( arg0 args' arg1 )
+        2rot 2dup 2rot ( args' arg0 arg0 arg1 )
+        objeq? false = if
+            2drop 2drop
+            false boolean-type exit
+        then
+
+        2swap cdr ( arg0 args'' )
+    repeat
+
+    2drop 2drop
+    true boolean-type
+; make-primitive =
+
 ( = Pairs and Lists = )
 
 :noname ( args -- pair )
@@ -220,6 +255,10 @@
     2dup car 2swap cdr car
     cons
 ; make-primitive cons
+
+:noname ( args -- list )
+    \ args is already a list!
+; make-primitive list
 
 :noname ( args -- pair )
     2dup 1 ensure-arg-count
@@ -254,3 +293,13 @@
 
     ok-symbol
 ; make-primitive set-cdr!
+
+( = Polymorphic equality testing = )
+
+:noname ( args -- bool )
+    2dup 2 ensure-arg-count
+    2dup cdr car
+    2swap car
+
+    objeq? boolean-type
+; make-primitive eq?
