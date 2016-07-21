@@ -223,14 +223,6 @@
 
 :noname ( args -- pair )
     2dup 1 ensure-arg-count
-    
-
-    2dup car 2swap cdr car
-    cons
-; make-primitive cons
-
-:noname ( args -- pair )
-    2dup 1 ensure-arg-count
     car pair-type ensure-arg-type
 
     car
@@ -245,20 +237,20 @@
 
 :noname ( args -- pair )
     2dup 2 ensure-arg-count
-    2dup car pair-type ensure-arg-type
-    swap cdr car
+    2dup cdr car
+    2swap car pair-type ensure-arg-type
 
-    2swap set-car!
+    set-car!
 
     ok-symbol
 ; make-primitive set-car!
 
 :noname ( args -- pair )
     2dup 2 ensure-arg-count
-    2dup car pair-type ensure-arg-type
-    swap cdr car
+    2dup cdr car
+    2swap car pair-type ensure-arg-type
 
-    2swap set-cdr!
+    set-cdr!
 
     ok-symbol
 ; make-primitive set-cdr!

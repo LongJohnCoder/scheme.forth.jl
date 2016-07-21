@@ -762,6 +762,7 @@ parse-idx-stack parse-idx-sp !
     then
 
     eof? if
+        inc-parse-idx
         bold fg blue ." Moriturus te saluto." reset-term ."  ok" cr
         quit
     then
