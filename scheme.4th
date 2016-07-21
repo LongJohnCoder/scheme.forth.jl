@@ -103,6 +103,66 @@ variable nextfree
 
 objvar symbol-table
 
+: duplicate-charlist ( charlist -- copy )
+    2dup nil objeq? false = if
+        2dup car 2swap cdr recurse cons
+    then ;
+
+: charlist-equiv ( charlist charlist -- bool )
+
+    2over 2over
+
+    \ One or both nil
+    nil? -rot 2drop
+    if
+        nil? -rot 2drop
+        if
+            2drop 2drop true exit
+        else
+            2drop 2drop false exit
+        then
+    else
+        nil? -rot 2drop
+        if
+            2drop 2drop false exit
+        then
+    then
+
+    2over 2over
+
+    \ Neither nil
+    car drop -rot car drop = if
+            cdr 2swap cdr recurse
+        else
+            2drop 2drop false
+    then
+;
+
+: charlist>symbol ( charlist -- symbol-obj )
+
+    symbol-table fetchobj
+
+    begin
+        nil? false =
+    while
+        2over 2over
+        car drop pair-type
+        charlist-equiv if
+            2swap 2drop
+            car
+            exit
+        else
+            cdr
+        then
+    repeat
+
+    2drop
+    drop symbol-type 2dup
+    symbol-table fetchobj cons
+    symbol-table setobj
+;
+
+
 : (create-symbol) ( addr n -- symbol-obj )
     dup 0= if
         2drop nil
@@ -597,60 +657,6 @@ parse-idx-stack parse-idx-sp !
     recurse
 
     cons
-;
-
-: charlist-equiv ( charlist charlist -- bool )
-
-    2over 2over
-
-    \ One or both nil
-    nil? -rot 2drop
-    if
-        nil? -rot 2drop
-        if
-            2drop 2drop true exit
-        else
-            2drop 2drop false exit
-        then
-    else
-        nil? -rot 2drop
-        if
-            2drop 2drop false exit
-        then
-    then
-
-    2over 2over
-
-    \ Neither nil
-    car drop -rot car drop = if
-            cdr 2swap cdr recurse
-        else
-            2drop 2drop false
-    then
-;
-
-: charlist>symbol ( charlist -- symbol-obj )
-
-    symbol-table fetchobj
-
-    begin
-        nil? false =
-    while
-        2over 2over
-        car drop pair-type
-        charlist-equiv if
-            2swap 2drop
-            car
-            exit
-        else
-            cdr
-        then
-    repeat
-
-    2drop
-    drop symbol-type 2dup
-    symbol-table fetchobj cons
-    symbol-table setobj
 ;
 
 : readpair ( -- pairobj )

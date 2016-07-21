@@ -130,6 +130,24 @@
     fixnum-type
 ; make-primitive string->number
 
+:noname ( args -- string )
+    2dup 1 ensure-arg-count
+    car symbol-type ensure-arg-type
+
+    drop pair-type
+    duplicate-charlist
+    drop string-type
+; make-primitive symbol->string
+
+:noname ( args -- symbol )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    drop pair-type
+    duplicate-charlist
+    charlist>symbol
+; make-primitive string->symbol
+
 ( = Arithmetic = )
 
 : add-prim ( args -- fixnum )
@@ -150,8 +168,14 @@
         0 fixnum-type
     else
         2dup car drop
-        -rot cdr add-prim drop
-        - fixnum-type
+        -rot cdr
+        2dup nil objeq? if
+            2drop negate
+        else
+            add-prim drop
+            -
+        then
+        fixnum-type
     then
 ; make-primitive -
 
@@ -166,3 +190,24 @@
     then
 ; make-primitive *
 
+:noname ( args -- fixnum )
+    2dup 2 ensure-arg-count
+
+    2dup car fixnum-type ensure-arg-type
+    2swap cdr car fixnum-type ensure-arg-type
+
+    drop swap drop
+
+    / fixnum-type
+; make-primitive quotient
+
+:noname ( args -- fixnum )
+    2dup 2 ensure-arg-count
+
+    2dup car fixnum-type ensure-arg-type
+    2swap cdr car fixnum-type ensure-arg-type
+
+    drop swap drop
+
+    mod fixnum-type
+; make-primitive remainder
