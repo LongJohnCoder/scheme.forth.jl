@@ -65,14 +65,24 @@
 ; make-primitive integer->char
 
 : build-fixnum-charlist ( num )
-    dup 0= if
-        nil
-    else
-        dup 10 / recurse
-        rot 10 mod [char] 0 + character-type 2swap
-        cons
+    ?dup 0= if
+        [char] 0 character-type nil cons
+        exit
     then
+
+    nil rot
+
+    begin
+        ?dup 0>
+    while
+        dup 10 mod swap 10 / swap
+        2swap rot
+        [char] 0 + character-type 2swap
+        cons
+        rot
+    repeat
 ;
+
 :noname ( args -- string )
     2dup 1 ensure-arg-count
     car fixnum-type ensure-arg-type
@@ -81,7 +91,6 @@
 
     dup 0< swap abs ( bool num )
     build-fixnum-charlist
-    rot drop
     rot if
         [char] - character-type 2swap cons
     then
@@ -89,7 +98,7 @@
     drop string-type
 ; make-primitive number->string
 
-( = Arithmeic = )
+( = Arithmetic = )
 
 : add-prim ( args -- fixnum )
     2dup nil objeq? if
