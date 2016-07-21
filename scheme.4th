@@ -393,8 +393,11 @@ parse-idx-stack parse-idx-sp !
 : minus? ( -- bool )
     nextchar [char] - = ;
 
+: plus? ( -- bool )
+    nextchar [char] + = ;
+
 : fixnum? ( -- bool )
-    minus? if
+    minus? plus? or if
         inc-parse-idx
 
         delim? if
@@ -493,8 +496,11 @@ parse-idx-stack parse-idx-sp !
     nextchar [char] " = ;
 
 : readnum ( -- num-atom )
-    minus? dup if
+    plus? minus? or if
+        minus?
         inc-parse-idx
+    else
+        false
     then
 
     0

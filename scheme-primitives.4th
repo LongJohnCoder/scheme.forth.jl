@@ -64,7 +64,7 @@
     drop character-type
 ; make-primitive integer->char
 
-: build-fixnum-charlist ( num )
+: num-to-charlist ( num -- charlist )
     ?dup 0= if
         [char] 0 character-type nil cons
         exit
@@ -90,13 +90,45 @@
     drop
 
     dup 0< swap abs ( bool num )
-    build-fixnum-charlist
+    num-to-charlist
     rot if
         [char] - character-type 2swap cons
     then
 
     drop string-type
 ; make-primitive number->string
+
+:noname ( args -- symbol )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    drop pair-type
+
+    2dup car [char] - character-type objeq? if
+        cdr
+        true -rot
+    else
+        2dup car [char] + character-type objeq? if
+            cdr
+        then
+        false -rot
+    then
+
+    0 -rot
+    begin
+        2dup nil objeq? false =
+    while
+        2dup car drop [char] 0 - -rot
+        2swap swap 10 * + -rot
+        cdr
+    repeat
+
+    2drop
+
+    swap if -1 * then
+
+    fixnum-type
+; make-primitive string->number
 
 ( = Arithmetic = )
 
