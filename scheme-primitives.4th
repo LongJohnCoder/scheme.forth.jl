@@ -211,3 +211,54 @@
 
     mod fixnum-type
 ; make-primitive remainder
+
+( = Pairs and Lists = )
+
+:noname ( args -- pair )
+    2dup 2 ensure-arg-count
+
+    2dup car 2swap cdr car
+    cons
+; make-primitive cons
+
+:noname ( args -- pair )
+    2dup 1 ensure-arg-count
+    
+
+    2dup car 2swap cdr car
+    cons
+; make-primitive cons
+
+:noname ( args -- pair )
+    2dup 1 ensure-arg-count
+    car pair-type ensure-arg-type
+
+    car
+; make-primitive car
+
+:noname ( args -- pair )
+    2dup 1 ensure-arg-count
+    car pair-type ensure-arg-type
+
+    cdr
+; make-primitive cdr
+
+:noname ( args -- pair )
+    2dup 2 ensure-arg-count
+    2dup car pair-type ensure-arg-type
+    swap cdr car
+
+    2swap set-car!
+
+    ok-symbol
+; make-primitive set-car!
+
+:noname ( args -- pair )
+    2dup 2 ensure-arg-count
+    2dup car pair-type ensure-arg-type
+    swap cdr car
+
+    2swap set-cdr!
+
+    ok-symbol
+; make-primitive set-cdr!
