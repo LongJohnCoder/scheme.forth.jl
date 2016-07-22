@@ -20,7 +20,7 @@ include defer-is.4th
 
 \ ------ Cons cell memory ------ {{{
 
-1000 constant N
+10000 constant N
 create car-cells N allot
 create car-type-cells N allot
 create cdr-cells N allot
@@ -972,7 +972,7 @@ defer eval
                 begin
                     2dup cdr 2dup nil objeq? false =
                 while
-                    -2rot car over ( nextbody env exp env )
+                    -2rot car 2over ( nextbody env exp env )
                     eval
                     2drop \ discard result
                     2swap ( env nextbody )
