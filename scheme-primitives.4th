@@ -45,7 +45,7 @@
 :noname ( args -- boolobj )
     2dup 1 ensure-arg-count
 
-    car primitive-type istype? -rot 2drop boolean-type
+    car primitive-proc-type istype? -rot 2drop boolean-type
 ; make-primitive procedure?
 
 ( = Type conversions = )

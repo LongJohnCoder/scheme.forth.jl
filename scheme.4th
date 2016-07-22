@@ -911,6 +911,21 @@ defer eval
     then
 ;
 
+: apply ( proc args )
+        2swap dup case
+            primitive-proc-type of
+                drop execute
+            endof
+
+            compound-proc-type of
+                ." Compound procedures not yet implemented."
+            endof
+
+            bold fg red ." Object not applicable. Aboring." reset-term cr
+            abort
+        endcase
+;
+
 :noname ( obj env -- result )
     2swap
 
@@ -957,16 +972,10 @@ defer eval
     application? if
         2over 2over
         operator 2swap eval
-
-        primitive-proc-type istype? false = if
-            bold fg red ." Object not applicable. Aboring." reset-term cr
-            abort
-        then
-
         -2rot
         operands 2swap list-of-vals
 
-        2swap drop execute
+        apply
         exit
     then
 
