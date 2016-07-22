@@ -40,3 +40,5 @@ hide abort-defer
 : goto ( cfa -- )
     R> drop execute ;
 
+: goto-prime ( cfa -- )
+    R> R> 2drop execute ;

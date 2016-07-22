@@ -981,7 +981,8 @@ defer eval
                 2drop ( env body )
                 car 2swap ( exp env )
 
-                eval \ TODO: tail call optimization
+                ['] eval goto-prime  \ Tail call optimization
+                \ eval               \ No tail call optimization
             endof
 
             bold fg red ." Object not applicable. Aboring." reset-term cr
