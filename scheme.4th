@@ -13,7 +13,8 @@ include defer-is.4th
 4 constant nil-type
 5 constant pair-type
 6 constant symbol-type
-7 constant primitive-type
+7 constant primitive-proc-type
+8 constant compound-proc-type
 : istype? ( obj type -- obj bool )
     over = ;
 
@@ -197,6 +198,7 @@ create-symbol define    define-symbol
 create-symbol set!      set!-symbol
 create-symbol ok        ok-symbol
 create-symbol if        if-symbol
+create-symbol lambda    lambda-symbol
 
 \ }}}
 
@@ -333,7 +335,7 @@ global-env setobj
     cons
     symbol-table setobj
 
-    rot primitive-type ( var prim )
+    rot primitive-proc-type ( var prim )
     global-env fetchobj define-var
 ;
 
@@ -956,7 +958,7 @@ defer eval
         2over 2over
         operator 2swap eval
 
-        primitive-type istype? false = if
+        primitive-proc-type istype? false = if
             bold fg red ." Object not applicable. Aboring." reset-term cr
             abort
         then
@@ -1047,7 +1049,7 @@ defer print
     symbol-type istype? if printsymbol exit then
     nil-type istype? if printnil exit then
     pair-type istype? if ." (" printpair ." )" exit then
-    primitive-type istype? if printprim exit then
+    primitive-proc-type istype? if printprim exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
