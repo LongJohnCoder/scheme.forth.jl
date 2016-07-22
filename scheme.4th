@@ -78,8 +78,8 @@ variable nextfree
 : type@ ( objvar -- type ) 1+ @ ;
 : value! ( newval objvar -- ) ! ;
 : type! ( newtype objvar -- ) 1+ ! ;
-: setobj ( newobj objvar -- ) dup rot swap 1+ ! ! ; 
-: fetchobj ( objvar -- obj ) dup @ swap 1+ @ ; 
+: obj! ( newobj objvar -- ) dup rot swap 1+ ! ! ; 
+: obj@ ( objvar -- obj ) dup @ swap 1+ @ ; 
 
 : objeq? ( obj obj -- bool )
     rot = -rot = and ;
@@ -141,7 +141,7 @@ objvar symbol-table
 
 : charlist>symbol ( charlist -- symbol-obj )
 
-    symbol-table fetchobj
+    symbol-table obj@
 
     begin
         nil? false =
@@ -159,8 +159,8 @@ objvar symbol-table
 
     2drop
     drop symbol-type 2dup
-    symbol-table fetchobj cons
-    symbol-table setobj
+    symbol-table obj@ cons
+    symbol-table obj!
 ;
 
 
@@ -185,9 +185,9 @@ objvar symbol-table
 
     2dup
 
-    symbol-table fetchobj
+    symbol-table obj@
     cons
-    symbol-table setobj
+    symbol-table obj!
 
     create swap , ,
     does> dup @ swap 1+ @
@@ -199,6 +199,7 @@ create-symbol set!      set!-symbol
 create-symbol ok        ok-symbol
 create-symbol if        if-symbol
 create-symbol lambda    lambda-symbol
+create-symbol λ         λ-symbol
 
 \ }}}
 
@@ -237,19 +238,19 @@ objvar vars
 objvar vals
 
 : get-vars-vals-frame ( var frame -- bool )
-    2dup frame-vars vars setobj
-    frame-vals vals setobj
+    2dup frame-vars vars obj!
+    frame-vals vals obj!
 
     begin
-        vars fetchobj nil objeq? false =
+        vars obj@ nil objeq? false =
     while
-        2dup vars fetchobj car objeq? if
+        2dup vars obj@ car objeq? if
             2drop true
             exit
         then
 
-        vars fetchobj cdr vars setobj
-        vals fetchobj cdr vals setobj
+        vars obj@ cdr vars obj!
+        vals obj@ cdr vals obj!
     repeat
 
     2drop false
@@ -263,7 +264,7 @@ objvar vals
         2over 2over first-frame
         get-vars-vals-frame if
             2drop 2drop
-            vars fetchobj vals fetchobj true
+            vars obj@ vals obj@ true
             exit
         then
 
@@ -298,15 +299,15 @@ hide vals
 objvar env
 
 : define-var ( var val env -- )
-    env setobj 
+    env obj! 
 
-    2over env fetchobj ( var val var env )
+    2over env obj@ ( var val var env )
     get-vars-vals if
         2swap 2drop ( var val vals )
         set-car!
         2drop
     else
-        env fetchobj
+        env obj@
         first-frame ( var val frame )
         add-binding
     then
@@ -316,7 +317,7 @@ hide env
 
 objvar global-env
 nil nil nil extend-env
-global-env setobj
+global-env obj!
 
 \ }}}
 
@@ -331,12 +332,12 @@ global-env setobj
     
     2dup
 
-    symbol-table fetchobj
+    symbol-table obj@
     cons
-    symbol-table setobj
+    symbol-table obj!
 
     rot primitive-proc-type ( var prim )
-    global-env fetchobj define-var
+    global-env obj@ define-var
 ;
 
 : arg-count-error
@@ -772,6 +773,12 @@ parse-idx-stack parse-idx-sp !
     \ Anything else is parsed as a symbol
     readsymbol charlist>symbol
 
+    \ Replace λ with lambda
+    2dup λ-symbol objeq? if
+        2drop lambda-symbol
+    then
+    
+
 ; is read
 
 \ }}}
@@ -881,6 +888,21 @@ defer eval
 : true? ( boolobj -- bool )
     false? invert ;
 
+: lambda? ( obj -- obj bool )
+    lambda-symbol tagged-list? ;
+
+: lambda-parameters ( obj -- params )
+    cdr car ;
+
+: lambda-body ( obj -- body )
+    cdr cdr ;
+
+: make-procedure ( params body env -- proc )
+    nil
+    cons cons cons
+    drop compound-proc-type
+;
+
 : application? ( obj -- obj bool)
     pair-type istype? ;
 
@@ -969,6 +991,13 @@ defer eval
         2swap ['] eval goto
     then
 
+    lambda? if
+        2dup lambda-body
+        2swap lambda-parameters
+        2rot make-procedure
+        exit
+    then
+
     application? if
         2over 2over
         operator 2swap eval
@@ -1050,6 +1079,9 @@ defer print
 : printprim ( primobj -- )
     2drop ." <primitive procedure>" ;
 
+: printcomp ( primobj -- )
+    2drop ." <compound procedure>" ;
+
 :noname ( obj -- )
     fixnum-type istype? if printnum exit then
     boolean-type istype? if printbool exit then
@@ -1059,6 +1091,7 @@ defer print
     nil-type istype? if printnil exit then
     pair-type istype? if ." (" printpair ." )" exit then
     primitive-proc-type istype? if printprim exit then
+    compound-proc-type istype? if printcomp exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
@@ -1077,7 +1110,7 @@ defer print
     begin
         cr bold fg green ." > " reset-term
         read
-        global-env fetchobj eval
+        global-env obj@ eval
         fg cyan ." ; " print reset-term
     again
 ;
