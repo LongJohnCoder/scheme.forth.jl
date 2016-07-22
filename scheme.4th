@@ -817,11 +817,23 @@ defer eval
 : definition? ( obj -- obj bool )
     define-symbol tagged-list? ;
 
+: make-lambda ( params body -- lambda-exp )
+    lambda-symbol -2rot cons cons ;
+
 : definition-var ( obj -- var )
-    cdr car ;
+    cdr car
+    symbol-type istype? false = if car then
+;
 
 : definition-val ( obj -- val )
-    cdr cdr car ;
+    2dup cdr car symbol-type istype? if
+        2drop
+        cdr cdr car
+    else
+        cdr 2swap cdr cdr
+        make-lambda
+    then
+;
 
 : assignment? ( obj -- obj bool )
     set!-symbol tagged-list? ;
@@ -940,7 +952,9 @@ defer eval
             endof
 
             compound-proc-type of
-                ." Compound procedures not yet implemented."
+                2drop 2drop
+                ." Compound procedures not yet implemented." cr
+                ok-symbol
             endof
 
             bold fg red ." Object not applicable. Aboring." reset-term cr
@@ -992,8 +1006,8 @@ defer eval
     then
 
     lambda? if
-        2dup lambda-body
-        2swap lambda-parameters
+        2dup lambda-parameters
+        2swap lambda-body
         2rot make-procedure
         exit
     then
