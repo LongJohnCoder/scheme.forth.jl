@@ -945,6 +945,15 @@ defer eval
     then
 ;
 
+: procedure-params ( proc -- params )
+    drop pair-type car ;
+
+: procedure-body ( proc -- body )
+    drop pair-type cdr car ;
+
+: procedure-env ( proc -- body )
+    drop pair-type cdr cdr car ;
+
 : apply ( proc args )
         2swap dup case
             primitive-proc-type of
@@ -952,9 +961,27 @@ defer eval
             endof
 
             compound-proc-type of
-                2drop 2drop
-                ." Compound procedures not yet implemented." cr
-                ok-symbol
+                2dup procedure-body ( args proc body )
+                -2rot 2dup procedure-params ( body args proc params )
+                -2rot procedure-env ( body params args procenv )
+
+                extend-env ( body env )
+
+                2swap ( env body )
+
+                begin
+                    2dup cdr 2dup nil objeq? false =
+                while
+                    -2rot car over ( nextbody env exp env )
+                    eval
+                    2drop \ discard result
+                    2swap ( env nextbody )
+                repeat
+
+                2drop ( env body )
+                car 2swap ( exp env )
+
+                eval \ TODO: tail call optimization
             endof
 
             bold fg red ." Object not applicable. Aboring." reset-term cr
