@@ -3,6 +3,11 @@ scheme definitions
 
 include term-colours.4th
 include defer-is.4th
+include catch-throw.4th
+
+defer read
+defer eval
+defer print
 
 \ ------ Types ------
 
@@ -375,8 +380,6 @@ include scheme-primitives.4th
 \ }}}
 
 \ ---- Read ---- {{{
-
-defer read
 
 variable parse-idx
 variable stored-parse-idx
@@ -785,8 +788,6 @@ parse-idx-stack parse-idx-sp !
 
 \ ---- Eval ---- {{{
 
-defer eval
-
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
     fixnum-type istype? if true exit then
@@ -981,8 +982,7 @@ defer eval
                 2drop ( env body )
                 car 2swap ( exp env )
 
-                ['] eval goto-prime  \ Tail call optimization
-                \ eval               \ No tail call optimization
+                R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
 
             bold fg red ." Object not applicable. Aboring." reset-term cr
@@ -1030,7 +1030,8 @@ defer eval
             if-alternative
         then
 
-        2swap ['] eval goto
+        2swap
+        ['] eval goto-deferred
     then
 
     lambda? if
@@ -1057,8 +1058,6 @@ defer eval
 \ }}}
 
 \ ---- Print ---- {{{
-
-defer print
 
 : printnum ( numobj -- ) drop 0 .R ;
 

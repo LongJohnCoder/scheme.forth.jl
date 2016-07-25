@@ -37,8 +37,5 @@ hide abort-defer
 
 \ Need this for tail call optimization
 
-: goto ( cfa -- )
-    R> drop execute ;
-
-: goto-prime ( cfa -- )
-    R> R> 2drop execute ;
+: goto-deferred ( cfa -- )
+    R> drop >body @ >body >R ;
