@@ -3,7 +3,7 @@ scheme definitions
 
 include term-colours.4th
 include defer-is.4th
-include catch-throw.4th
+include throw-catch.4th
 
 defer read
 defer eval
