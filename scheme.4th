@@ -11,15 +11,23 @@ defer print
 
 \ ------ Types ------
 
-0 constant fixnum-type
-1 constant boolean-type
-2 constant character-type
-3 constant string-type
-4 constant nil-type
-5 constant pair-type
-6 constant symbol-type
-7 constant primitive-proc-type
-8 constant compound-proc-type
+variable nexttype
+0 nexttype !
+: make-type
+    create nexttype @ ,
+    nexttype @ 1+ nexttype !
+    does> @ ;
+
+make-type fixnum-type
+make-type real-type
+make-type boolean-type
+make-type character-type
+make-type string-type
+make-type nil-type
+make-type pair-type
+make-type symbol-type
+make-type primitive-proc-type
+make-type compound-proc-type
 : istype? ( obj type -- obj bool )
     over = ;
 
