@@ -4,6 +4,7 @@ scheme definitions
 include term-colours.4th
 include defer-is.4th
 include throw-catch.4th
+include float.4th
 
 defer read
 defer eval
@@ -19,7 +20,7 @@ variable nexttype
     does> @ ;
 
 make-type fixnum-type
-make-type real-type
+make-type realnum-type
 make-type boolean-type
 make-type character-type
 make-type string-type
@@ -508,13 +509,48 @@ parse-idx-stack parse-idx-sp !
         inc-parse-idx
     repeat
 
-    delim? if
-        pop-parse-idx
-        true
-    else
-        pop-parse-idx
-        false
+    delim? pop-parse-idx
+;
+
+: realnum? ( -- bool )
+    \ Record starting parse idx:
+    \ Want to detect whether any characters were eaten.
+    parse-idx @
+
+    push-parse-idx
+
+    minus? plus? or if
+        inc-parse-idx
     then
+
+    begin digit? while
+            inc-parse-idx
+    repeat
+
+    [char] . nextchar = if
+        inc-parse-idx
+        begin digit? while
+                inc-parse-idx
+        repeat
+    then
+
+    [char] e nextchar = [char] E nextchar = or if
+        inc-parse-idx
+
+        minus? plus? or if
+            inc-parse-idx
+        then
+
+        begin digit? while
+                inc-parse-idx
+        repeat
+    then
+
+    \ This is a real number if characters were
+    \ eaten and the next characer is a delimiter.
+    parse-idx @ < delim? and
+
+    pop-parse-idx
 ;
 
 : boolean? ( -- bool )
@@ -584,7 +620,7 @@ parse-idx-stack parse-idx-sp !
 : string? ( -- bool )
     nextchar [char] " = ;
 
-: readnum ( -- num-atom )
+: readfixnum ( -- num-atom )
     plus? minus? or if
         minus?
         inc-parse-idx
@@ -602,6 +638,24 @@ parse-idx-stack parse-idx-sp !
     swap if negate then
 
     fixnum-type
+;
+
+: readrealnum ( -- realnum )
+
+    \ Remember that at this point we're guaranteed to
+    \ have a parsable real on this line.
+
+    parse-str parse-idx @ +
+
+    begin delim? false = while
+            inc-parse-idx
+    repeat
+
+    parse-str parse-idx @ + over -
+
+    float-parse
+
+    realnum-type
 ;
 
 : readbool ( -- bool-atom )
@@ -721,7 +775,12 @@ parse-idx-stack parse-idx-sp !
     eatspaces
 
     fixnum? if
-        readnum
+        readfixnum
+        exit
+    then
+
+    realnum? if
+        readrealnum
         exit
     then
 
@@ -799,6 +858,7 @@ parse-idx-stack parse-idx-sp !
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
     fixnum-type istype? if true exit then
+    realnum-type istype? if true exit then
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
@@ -1067,7 +1127,9 @@ parse-idx-stack parse-idx-sp !
 
 \ ---- Print ---- {{{
 
-: printnum ( numobj -- ) drop 0 .R ;
+: printfixnum ( fixnumobj -- ) drop 0 .R ;
+
+: printrealnum ( realnumobj -- ) drop float-print ;
 
 : printbool ( numobj -- )
     drop if
@@ -1132,7 +1194,8 @@ parse-idx-stack parse-idx-sp !
     2drop ." <compound procedure>" ;
 
 :noname ( obj -- )
-    fixnum-type istype? if printnum exit then
+    fixnum-type istype? if printfixnum exit then
+    realnum-type istype? if printrealnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then

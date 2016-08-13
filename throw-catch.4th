@@ -34,5 +34,6 @@
     ." Stack trace:"
     stack-trace
     cr ." ---" cr
-    key drop
+
+    trace
 ;

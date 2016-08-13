@@ -1,26 +1,44 @@
 \ Floating point arithmetic
 
-: lshift 2* ;
-: rshift 2/ ;
+( Cheating for now by using forth.jl CODE/END-CODE to
+  access Julia's floating point support.  This isn't
+  at all portable.  That said, the year is 2016 and most
+  CPUs implement these operations - even the trig functions,
+  so I don't feel too bad! )
 
-: nlshift 0 do lshift loop ;
-: nrshift 0 do rshift loop ;
+CODE f+
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a+b))
+END-CODE
 
-1 52 nlshift 1- constant frac-mask
-1 11 nlshift 1- 52 nlshift constant exp-mask
+CODE f-
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a-b))
+END-CODE
 
-: fraction
-    frac-mask and ;
+CODE f*
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a*b))
+END-CODE
 
-: exponent
-    exp-mask and 52 nrshift ;
+CODE f/
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a/b))
+END-CODE
 
-: sign ( float -- sign  )
-    0> ;
+( addr len -- float )
+CODE float-parse
+    len = popPS()
+    addr = popPS()
+    val = parse(Float64, getString(addr, len))
+    pushPS(reinterpret(Int64, val))
+END-CODE
 
-: make-float ( sign exponent fraction -- float )
-    swap 52 nlshift or
-    swap false = if
-        negate
-    then
-;
+( float -- )
+CODE float-print
+    print(reinterpret(Float64, popPS()))
+END-CODE
