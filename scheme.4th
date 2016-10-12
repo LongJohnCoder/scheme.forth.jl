@@ -513,15 +513,15 @@ parse-idx-stack parse-idx-sp !
 ;
 
 : realnum? ( -- bool )
-    \ Record starting parse idx:
-    \ Want to detect whether any characters were eaten.
-    parse-idx @
-
     push-parse-idx
 
     minus? plus? or if
         inc-parse-idx
     then
+
+    \ Record starting parse idx:
+    \ Want to detect whether any characters (following +/-) were eaten.
+    parse-idx @
 
     begin digit? while
             inc-parse-idx
@@ -539,6 +539,10 @@ parse-idx-stack parse-idx-sp !
 
         minus? plus? or if
             inc-parse-idx
+        then
+
+        digit? invert if
+            drop pop-parse-idx false exit
         then
 
         begin digit? while
