@@ -3,12 +3,15 @@ scheme definitions
 
 include term-colours.4th
 include defer-is.4th
-include throw-catch.4th
 include float.4th
+
+include debugging.4th
 
 defer read
 defer eval
 defer print
+
+defer collect-garbage
 
 \ ------ Types ------
 
@@ -16,7 +19,7 @@ variable nexttype
 0 nexttype !
 : make-type
     create nexttype @ ,
-    nexttype @ 1+ nexttype !
+    1 nexttype +!
     does> @ ;
 
 make-type fixnum-type
@@ -52,6 +55,8 @@ variable nextfree
     nextfree @ pair-type
 
     1 nextfree +!
+
+    collect-garbage
 ;
 
 : car ( pair-obj -- car-obj )
@@ -111,6 +116,28 @@ variable nextfree
     2swap ( c1 c2 a1 a2 )
     R> R>
 ;
+
+\ }}}
+
+\ ---- Garbage Collection ---- {{{
+
+variable gc-enabled
+false gc-enabled !
+
+: gc-enable
+    true gc-enabled ! ;
+
+: gc-disable
+    false gc-enabled ! ;
+
+: gc-enabled?
+    gc-enabled @ ;
+
+:noname 
+    gc-enabled? if
+        .s ." GC!" cr
+    then
+; is collect-garbage
 
 \ }}}
 
@@ -340,6 +367,8 @@ global-env obj!
 : make-primitive ( cfa -- )
     bl word
     count
+
+    \ 2dup ." Defining primitive " type ." ..." cr
 
     (create-symbol)
     drop symbol-type
@@ -840,7 +869,7 @@ parse-idx-stack parse-idx-sp !
 
     eof? if
         inc-parse-idx
-        bold fg blue ." Moriturus te saluto." reset-term ."  ok" cr
+        bold fg blue ." Moriturus te saluto." reset-term cr
         quit
     then
 
@@ -1221,12 +1250,17 @@ parse-idx-stack parse-idx-sp !
     cr ." Welcome to scheme.forth.jl!" cr
        ." Use Ctrl-D to exit." cr
 
+    
     empty-parse-str
+
+    gc-enable
 
     begin
         cr bold fg green ." > " reset-term
         read
+
         global-env obj@ eval
+
         fg cyan ." ; " print reset-term
     again
 ;
