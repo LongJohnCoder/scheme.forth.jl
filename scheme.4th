@@ -166,18 +166,15 @@ false gc-enabled !
 
 : gc-mark-obj ( obj -- )
 
-    pairlike? if
-        pairlike-marked? if 2drop exit then
-            
-        mark-pairlike
+    pairlike? invert if 2drop exit then
+    pairlike-marked? if 2drop exit then
 
-        2dup
+    mark-pairlike
 
-        car recurse
-        cdr recurse
-    else
-        2drop
-    then
+    drop pair-type 2dup
+
+    car recurse
+    cdr recurse
 ;
 
 : gc-sweep
