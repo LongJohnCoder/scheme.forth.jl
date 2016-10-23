@@ -143,6 +143,7 @@ false gc-enabled !
     pair-type istype? if true exit then
     string-type istype? if true exit then
     symbol-type istype? if true exit then
+    compound-proc-type istype? if true exit then
 
     false
 ;
