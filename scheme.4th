@@ -35,15 +35,15 @@ make-type compound-proc-type
 
 \ ------ Cons cell memory ------ {{{
 
-10000 constant N
-create car-cells N allot
-create car-type-cells N allot
-create cdr-cells N allot
-create cdr-type-cells N allot
+1000 constant scheme-memsize
+create car-cells scheme-memsize allot
+create car-type-cells scheme-memsize allot
+create cdr-cells scheme-memsize allot
+create cdr-type-cells scheme-memsize allot
 
-create nextfrees N allot
+create nextfrees scheme-memsize allot
 :noname
-    N 0 do
+    scheme-memsize 0 do
         i 1+ nextfrees i + !
     loop
 ; execute
@@ -53,7 +53,15 @@ variable nextfree
 
 : inc-nextfree
     nextfrees nextfree @ + @
-    nextfree ! ;
+
+    dup scheme-memsize < if
+        nextfree !
+    else
+        bold fg red
+        ." Out of memory! Aborting."
+        reset-term abort
+    then
+;
 
 : cons ( car-obj cdr-obj -- pair-obj )
     cdr-type-cells nextfree @ + !
@@ -173,8 +181,8 @@ false gc-enabled !
 ;
 
 : gc-sweep
-    N nextfree !
-    0 N 1- do
+    scheme-memsize nextfree !
+    0 scheme-memsize 1- do
         nextfrees i + @ 0<> if
             nextfree @ nextfrees i + !
             i nextfree !
