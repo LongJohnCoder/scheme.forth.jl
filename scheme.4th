@@ -11,8 +11,6 @@ defer read
 defer eval
 defer print
 
-defer collect-garbage
-
 \ ------ Types ------
 
 variable nexttype
@@ -43,8 +41,19 @@ create car-type-cells N allot
 create cdr-cells N allot
 create cdr-type-cells N allot
 
+create nextfrees N allot
+:noname
+    N 0 do
+        i 1+ nextfrees i + !
+    loop
+; execute
+        
 variable nextfree
 0 nextfree !
+
+: inc-nextfree
+    nextfrees nextfree @ + @
+    nextfree ! ;
 
 : cons ( car-obj cdr-obj -- pair-obj )
     cdr-type-cells nextfree @ + !
@@ -53,10 +62,7 @@ variable nextfree
     car-cells nextfree @ + !
 
     nextfree @ pair-type
-
-    1 nextfree +!
-
-    collect-garbage
+    inc-nextfree
 ;
 
 : car ( pair-obj -- car-obj )
@@ -133,11 +139,46 @@ false gc-enabled !
 : gc-enabled?
     gc-enabled @ ;
 
-:noname 
-    gc-enabled? if
-        .s ." GC!" cr
+: pairlike? ( obj -- obj bool )
+    pair-type istype? if true exit then
+    string-type istype? if true exit then
+    symbol-type istype? if true exit then
+
+    false
+;
+
+: pairlike-marked? ( obj -- obj bool )
+    over nextfrees + 0=
+;
+
+: mark-pairlike ( obj -- obj )
+        over nextfrees + 0 swap !
+;
+
+: gc-mark-obj ( obj -- )
+
+    pairlike? if
+        pairlike-marked? if 2drop exit then
+            
+        mark-pairlike
+
+        2dup
+
+        car recurse
+        cdr recurse
+    else
+        2drop
     then
-; is collect-garbage
+;
+
+: gc-sweep
+    N nextfree !
+    0 N 1- do
+        nextfrees i + @ 0<> if
+            nextfree @ nextfrees i + !
+            i nextfree !
+        then
+    -1 +loop ;
 
 \ }}}
 
@@ -1252,8 +1293,6 @@ parse-idx-stack parse-idx-sp !
 
     
     empty-parse-str
-
-    gc-enable
 
     begin
         cr bold fg green ." > " reset-term
