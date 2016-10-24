@@ -157,14 +157,23 @@ false gc-enabled !
 ;
 
 : pairlike-marked? ( obj -- obj bool )
-    over nextfrees + 0=
+    over nextfrees + @ 0=
 ;
 
 : mark-pairlike ( obj -- obj )
         over nextfrees + 0 swap !
 ;
 
+: gc-unmark ( -- )
+    scheme-memsize 0 do
+        1 nextfrees i + !
+    loop
+;
+
+defer gc-mark-trace
 : gc-mark-obj ( obj -- )
+
+    gc-mark-trace
 
     pairlike? invert if 2drop exit then
     pairlike-marked? if 2drop exit then
@@ -184,9 +193,12 @@ false gc-enabled !
             nextfree @ nextfrees i + !
             i nextfree !
         then
-    -1 +loop ;
+    -1 +loop
+;
 
 \ }}}
+
+   
 
 \ ---- Pre-defined symbols ---- {{{
 
@@ -1290,6 +1302,54 @@ parse-idx-stack parse-idx-sp !
 ; is print
 
 \ }}}
+
+\ ---- DEBUGGING ---- {{{
+
+false value debug-mode
+
+:noname
+    debug-mode if
+        ." Object: " 2dup cr print cr
+        ." Pairlike: " pairlike? if
+            ." TRUE"
+            pairlike-marked? if
+                ."  (Marked)"
+            else
+                ."  (Unmarked)"
+            then
+        else
+            ." FALSE"
+        then
+        cr ." [paused]"
+        key drop cr
+    then
+; is gc-mark-trace
+
+: gc-mark-sweep
+    gc-unmark
+    symbol-table obj@ gc-mark-obj
+    global-env obj@ gc-mark-obj
+    gc-sweep
+;
+
+: gc-count-marked
+    0
+    scheme-memsize 0 do
+        nextfrees i + @ 0= if 1+ then
+    loop
+;
+
+: gc-zero-unmarked
+    scheme-memsize 0 do
+        nextfrees i + @ 0<> if
+            0 car-cells i + !
+            0 cdr-cells i + !
+        then
+    loop
+;
+
+\ }}}
+
 
 \ ---- REPL ----
 

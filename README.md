@@ -1,7 +1,7 @@
 scheme.forth.jl
 ---------------
 
-A hobby scheme implementation for FORTH 83. Specifically it is targeted at 
+A hobby scheme interpreter for FORTH 83. Specifically it is targeted at 
 [forth.jl](http://github.com/tgvaughan/forth.jl) which is an implementation
 of FORTH on top of [Julia](http://www.julialang.org), hence the name.
 At the moment it is a fairly direct port of Peter Micheaux's [Bootstrap
