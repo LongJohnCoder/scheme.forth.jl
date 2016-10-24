@@ -64,34 +64,39 @@
     drop character-type
 ; make-primitive integer->char
 
-: num-to-charlist ( num -- charlist )
-    ?dup 0= if
+: fixnum-to-charlist ( fixnum -- charlist )
+    over 0= if
+        2drop
         [char] 0 character-type nil cons
         exit
     then
 
-    nil rot
+    nil 2swap ( charlist fixnum )
 
     begin
-        ?dup 0>
+        over 0>
     while
-        dup 10 mod swap 10 / swap
-        2swap rot
-        [char] 0 + character-type 2swap
-        cons
-        rot
+        2dup swap 10 mod swap ( charlist fixnum fixnummod )
+        2swap swap 10 / swap  ( charlist fixnummod fixnumdiv )
+        -2rot ( fixnumdiv charlist fixnummod )
+
+        drop [char] 0 + character-type 2swap
+        cons ( fixnumdiv newcharlist )
+
+        2swap 
     repeat
+
+    2drop
 ;
 
 :noname ( args -- string )
     2dup 1 ensure-arg-count
     car fixnum-type ensure-arg-type
 
-    drop
+    2dup swap abs swap
 
-    dup 0< swap abs ( bool num )
-    num-to-charlist
-    rot if
+    fixnum-to-charlist ( fixnum charlist )
+    2swap drop 0< if
         [char] - character-type 2swap cons
     then
 

@@ -138,10 +138,10 @@ variable nextfree
 variable gc-enabled
 false gc-enabled !
 
-: gc-enable
+: enable-gc
     true gc-enabled ! ;
 
-: gc-disable
+: disable-gc
     false gc-enabled ! ;
 
 : gc-enabled?
@@ -197,8 +197,6 @@ defer gc-mark-trace
 ;
 
 \ }}}
-
-   
 
 \ ---- Pre-defined symbols ---- {{{
 
