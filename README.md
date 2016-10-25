@@ -1,15 +1,18 @@
 scheme.forth.jl
 ---------------
 
-A hobby scheme interpreter for FORTH 83. Specifically it is targeted at
+A hobby Scheme interpreter for FORTH 83. Specifically it is targeted at
 [forth.jl](http://github.com/tgvaughan/forth.jl) which is an implementation of
 FORTH on top of [Julia](http://www.julialang.org), hence the name.  It began
 life as a fairly direct port of Peter Micheaux's [Bootstrap
 Scheme](https://github.com/petermichaux/bootstrap-scheme) (as described in
 [this wonderful series of blog
 posts](http://peter.michaux.ca/articles/scheme-from-scratch-introduction)) from
-C to forth.  In addition, this interpreter has a mark-sweep garbage collector.
-In future, I plan to also implement a macro system, file io, and a more
+C to forth.  In addition, this interpreter has a mark-sweep garbage collector
+and support for reading input from external files using a partial implementation
+of Scheme's file ports.
+
+In future, I plan to also implement a macro system and a more
 complete numerical tower to bring it closer to
 [R5RS](http://www.schemers.org/Documents/Standards/R5RS/).
 
