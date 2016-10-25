@@ -1412,21 +1412,24 @@ include scheme-primitives.4th
     swap -
 ;
 
-: load ( addr n -- )
+: load ( addr n -- finalResult )
     open-input-file
 
     empty-parse-str
 
+    ok-symbol ( port res )
+
     begin
-        2dup read-port
+        2over read-port ( port res obj )
 
         2dup EOF character-type objeq? if
-            2drop close-port
+            2drop 2swap close-port
             exit
         then
 
-        global-env obj@ eval
-        2drop
+        2swap 2drop ( port obj )
+
+        global-env obj@ eval ( port res )
     again
 ;
 
@@ -1458,7 +1461,7 @@ include scheme-primitives.4th
 ;
 
 : test s" fact.scm" ;
-test load
+test load 2drop
 
 forth definitions
 
