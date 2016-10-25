@@ -1433,6 +1433,15 @@ include scheme-primitives.4th
     again
 ;
 
+:noname ( args -- finalResult )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    drop pair-type
+    pad charlist>cstr
+    pad swap load
+; make-primitive load
+
 \ }}}
 
 \ ---- REPL ----
@@ -1459,9 +1468,6 @@ include scheme-primitives.4th
         fg cyan ." ; " print reset-term
     again
 ;
-
-: test s" fact.scm" ;
-test load 2drop
 
 forth definitions
 
