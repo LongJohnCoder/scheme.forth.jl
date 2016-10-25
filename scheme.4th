@@ -11,6 +11,8 @@ defer read
 defer eval
 defer print
 
+defer collect-garbage
+
 \ ------ Types ------
 
 variable nexttype
@@ -33,9 +35,10 @@ make-type compound-proc-type
 : istype? ( obj type -- obj bool )
     over = ;
 
-\ ------ Cons cell memory ------ {{{
+\ ------ List-structured memory ------ {{{
 
-1000 constant scheme-memsize
+10000 constant scheme-memsize
+
 create car-cells scheme-memsize allot
 create car-type-cells scheme-memsize allot
 create cdr-cells scheme-memsize allot
@@ -53,11 +56,14 @@ variable nextfree
 
 : inc-nextfree
     nextfrees nextfree @ + @
+    nextfree !
 
-    dup scheme-memsize < if
-        nextfree !
-    else
-        bold fg red
+    nextfree @ scheme-memsize >= if
+        collect-garbage
+    then
+
+    nextfree @ scheme-memsize >= if
+        fg red bold
         ." Out of memory! Aborting."
         reset-term abort
     then
@@ -133,70 +139,6 @@ variable nextfree
 
 \ }}}
 
-\ ---- Garbage Collection ---- {{{
-
-variable gc-enabled
-false gc-enabled !
-
-: enable-gc
-    true gc-enabled ! ;
-
-: disable-gc
-    false gc-enabled ! ;
-
-: gc-enabled?
-    gc-enabled @ ;
-
-: pairlike? ( obj -- obj bool )
-    pair-type istype? if true exit then
-    string-type istype? if true exit then
-    symbol-type istype? if true exit then
-    compound-proc-type istype? if true exit then
-
-    false
-;
-
-: pairlike-marked? ( obj -- obj bool )
-    over nextfrees + @ 0=
-;
-
-: mark-pairlike ( obj -- obj )
-        over nextfrees + 0 swap !
-;
-
-: gc-unmark ( -- )
-    scheme-memsize 0 do
-        1 nextfrees i + !
-    loop
-;
-
-defer gc-mark-trace
-: gc-mark-obj ( obj -- )
-
-    gc-mark-trace
-
-    pairlike? invert if 2drop exit then
-    pairlike-marked? if 2drop exit then
-
-    mark-pairlike
-
-    drop pair-type 2dup
-
-    car recurse
-    cdr recurse
-;
-
-: gc-sweep
-    scheme-memsize nextfree !
-    0 scheme-memsize 1- do
-        nextfrees i + @ 0<> if
-            nextfree @ nextfrees i + !
-            i nextfree !
-        then
-    -1 +loop
-;
-
-\ }}}
 
 \ ---- Pre-defined symbols ---- {{{
 
@@ -748,7 +690,7 @@ parse-idx-stack parse-idx-sp !
     realnum-type
 ;
 
-: readbool ( -- bool-atom )
+: readbool ( -- bool-obj )
     inc-parse-idx
     
     nextchar [char] f = if
@@ -762,7 +704,7 @@ parse-idx-stack parse-idx-sp !
     boolean-type
 ;
 
-: readchar ( -- char-atom )
+: readchar ( -- char-obj )
     inc-parse-idx
     inc-parse-idx
 
@@ -1301,35 +1243,70 @@ parse-idx-stack parse-idx-sp !
 
 \ }}}
 
-\ ---- DEBUGGING ---- {{{
+\ ---- Garbage Collection ---- {{{
 
-false value debug-mode
+variable gc-enabled
+false gc-enabled !
 
-:noname
-    debug-mode if
-        ." Object: " 2dup cr print cr
-        ." Pairlike: " pairlike? if
-            ." TRUE"
-            pairlike-marked? if
-                ."  (Marked)"
-            else
-                ."  (Unmarked)"
-            then
-        else
-            ." FALSE"
-        then
-        cr ." [paused]"
-        key drop cr
-    then
-; is gc-mark-trace
+variable gc-stack-depth
 
-: gc-mark-sweep
-    gc-unmark
-    symbol-table obj@ gc-mark-obj
-    global-env obj@ gc-mark-obj
-    gc-sweep
+: enable-gc
+    depth gc-stack-depth !
+    true gc-enabled ! ;
+
+: disable-gc
+    false gc-enabled ! ;
+
+: gc-enabled?
+    gc-enabled @ ;
+
+: pairlike? ( obj -- obj bool )
+    pair-type istype? if true exit then
+    string-type istype? if true exit then
+    symbol-type istype? if true exit then
+    compound-proc-type istype? if true exit then
+
+    false
 ;
 
+: pairlike-marked? ( obj -- obj bool )
+    over nextfrees + @ 0=
+;
+
+: mark-pairlike ( obj -- obj )
+        over nextfrees + 0 swap !
+;
+
+: gc-unmark ( -- )
+    scheme-memsize 0 do
+        1 nextfrees i + !
+    loop
+;
+
+: gc-mark-obj ( obj -- )
+
+    pairlike? invert if 2drop exit then
+    pairlike-marked? if 2drop exit then
+
+    mark-pairlike
+
+    drop pair-type 2dup
+
+    car recurse
+    cdr recurse
+;
+
+: gc-sweep
+    scheme-memsize nextfree !
+    0 scheme-memsize 1- do
+        nextfrees i + @ 0<> if
+            nextfree @ nextfrees i + !
+            i nextfree !
+        then
+    -1 +loop
+;
+
+\ Following a GC, this gives the amount of free memory
 : gc-count-marked
     0
     scheme-memsize 0 do
@@ -1337,6 +1314,7 @@ false value debug-mode
     loop
 ;
 
+\ Debugging word - helps spot memory that is retained
 : gc-zero-unmarked
     scheme-memsize 0 do
         nextfrees i + @ 0<> if
@@ -1346,8 +1324,27 @@ false value debug-mode
     loop
 ;
 
-\ }}}
+:noname
+    \ ." GC! "
 
+    gc-unmark
+
+    symbol-table obj@ gc-mark-obj
+    global-env obj@ gc-mark-obj
+
+    depth gc-stack-depth @ do
+        PSP0 i + 1 + @
+        PSP0 i + 2 + @
+
+        gc-mark-obj
+    2 +loop
+
+    gc-sweep
+
+    \ ." (" gc-count-marked . ." pairs marked as used.)" cr
+; is collect-garbage
+
+\ }}}
 
 \ ---- REPL ----
 
@@ -1357,6 +1354,8 @@ false value debug-mode
 
     
     empty-parse-str
+
+    enable-gc
 
     begin
         cr bold fg green ." > " reset-term

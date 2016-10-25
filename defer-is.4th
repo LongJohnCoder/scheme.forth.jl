@@ -18,7 +18,7 @@ hide abort-defer
 : is immediate
     bl word find
 
-    0= abort" Undefined deferred word."
+    0= abort" Tried to define unknown deferred word."
 
     state @ 0= if
         defer!
