@@ -32,6 +32,7 @@ make-type pair-type
 make-type symbol-type
 make-type primitive-proc-type
 make-type compound-proc-type
+make-type fileport-type
 : istype? ( obj type -- obj bool )
     over = ;
 
@@ -139,6 +140,36 @@ variable nextfree
 
 \ }}}
 
+\ ---- Port I/O ----  {{{
+
+: fileport>fid ( fileport -- fid )
+    drop ;
+
+: fid>fileport ( fid -- fileport )
+    fileport-type ;
+
+: open-input-file ( addr n -- fileport )
+    r/o open-file drop fid>fileport
+;
+
+: close-port ( fileport -- )
+    fileport>fid close-file drop
+;
+
+objvar console-i/o-port
+0 fileport-type console-i/o-port obj!
+
+objvar current-input-port
+console-i/o-port obj@ current-input-port obj!
+
+: read-port ( fileport -- obj )
+    current-input-port obj!
+    read ;
+
+: read-console ( -- obj )
+    console-i/o-port obj@ read-port ;
+
+\ }}}
 
 \ ---- Pre-defined symbols ---- {{{
 
@@ -204,7 +235,7 @@ objvar symbol-table
 ;
 
 
-: (create-symbol) ( addr n -- symbol-obj )
+: cstr>charlist ( addr n -- symbol-obj )
     dup 0= if
         2drop nil
     else
@@ -220,7 +251,7 @@ objvar symbol-table
     bl word
     count
 
-    (create-symbol)
+    cstr>charlist
     drop symbol-type
 
     2dup
@@ -361,61 +392,6 @@ global-env obj!
 
 \ }}}
 
-\ ---- Primitives ---- {{{
-
-: make-primitive ( cfa -- )
-    bl word
-    count
-
-    \ 2dup ." Defining primitive " type ." ..." cr
-
-    (create-symbol)
-    drop symbol-type
-    
-    2dup
-
-    symbol-table obj@
-    cons
-    symbol-table obj!
-
-    rot primitive-proc-type ( var prim )
-    global-env obj@ define-var
-;
-
-: arg-count-error
-            bold fg red ." Incorrect argument count." reset-term cr
-            abort
-;
-
-: ensure-arg-count ( args n -- )
-    dup 0= if
-        drop nil objeq? false = if
-            arg-count-error
-        then
-    else
-        -rot 2dup nil objeq? if
-            arg-count-error
-        then
-        
-        cdr rot 1- recurse
-    then
-;
-
-: arg-type-error
-            bold fg red ." Incorrect argument type." reset-term cr
-            abort
-;
-
-: ensure-arg-type ( arg type -- arg )
-    istype? false = if
-        arg-type-error
-    then
-;
-
-include scheme-primitives.4th
-
-\ }}}
-
 \ ---- Read ---- {{{
 
 variable parse-idx
@@ -444,13 +420,24 @@ parse-idx-stack parse-idx-sp !
     '\n' parse-str parse-str-span @ + !
     1 parse-str-span +! ;
 
+: append-eof
+    4 parse-str parse-str-span @ + !
+    1 parse-str-span +!  ;
+
 : empty-parse-str
     0 parse-str-span !
     0 parse-idx ! ;
 
 : getline
-    parse-str 160 expect cr
-    span @ parse-str-span !
+    current-input-port obj@ console-i/o-port obj@ objeq? if
+        parse-str 160 expect cr
+        span @ parse-str-span !
+    else
+        parse-str 160 current-input-port obj@ fileport>fid read-line
+        drop swap parse-str-span !
+
+        parse-str-span @ 0= and if append-eof then
+    then
     append-newline
     0 parse-idx ! ;
 
@@ -467,12 +454,16 @@ parse-idx-stack parse-idx-sp !
     charavailable? false = if getline then
     parse-str parse-idx @ + @ ;
 
+: '\t' 9 ;
 : whitespace? ( -- bool )
     nextchar BL = 
-    nextchar '\n' = or ;
+    nextchar '\n' =
+    nextchar '\t' =
+    or or ;
 
+: EOF 4 ; 
 : eof? ( -- bool )
-    nextchar 4 = ;
+    nextchar EOF = ;
 
 : delim? ( -- bool )
     whitespace?
@@ -867,9 +858,9 @@ parse-idx-stack parse-idx-sp !
     then
 
     eof? if
+        EOF character-type
         inc-parse-idx
-        bold fg blue ." Moriturus te saluto." reset-term cr
-        quit
+        exit
     then
 
     \ Anything else is parsed as a symbol
@@ -1346,26 +1337,128 @@ variable gc-stack-depth
 
 \ }}}
 
+\ ---- Primitives ---- {{{
+
+: make-primitive ( cfa -- )
+    bl word
+    count
+
+    \ 2dup ." Defining primitive " type ." ..." cr
+
+    cstr>charlist
+    drop symbol-type
+    
+    2dup
+
+    symbol-table obj@
+    cons
+    symbol-table obj!
+
+    rot primitive-proc-type ( var prim )
+    global-env obj@ define-var
+;
+
+: arg-count-error
+            bold fg red ." Incorrect argument count." reset-term cr
+            abort
+;
+
+: ensure-arg-count ( args n -- )
+    dup 0= if
+        drop nil objeq? false = if
+            arg-count-error
+        then
+    else
+        -rot 2dup nil objeq? if
+            arg-count-error
+        then
+        
+        cdr rot 1- recurse
+    then
+;
+
+: arg-type-error
+            bold fg red ." Incorrect argument type." reset-term cr
+            abort
+;
+
+: ensure-arg-type ( arg type -- arg )
+    istype? false = if
+        arg-type-error
+    then
+;
+
+include scheme-primitives.4th
+
+\ }}}
+
+\ ---- Loading files ---- {{{
+
+: charlist>cstr ( charlist addr -- n )
+
+    dup 2swap ( origaddr addr charlist )
+
+    begin 
+        2dup nil objeq? false =
+    while
+        2dup cdr 2swap car 
+        drop ( origaddr addr charlist char )
+        -rot 2swap ( origaddr charlist addr char )
+        over !
+        1+ -rot ( origaddr nextaddr charlist )
+    repeat
+
+    2drop ( origaddr finaladdr ) 
+    swap -
+;
+
+: load ( addr n -- )
+    open-input-file
+
+    empty-parse-str
+
+    begin
+        2dup read-port
+
+        2dup EOF character-type objeq? if
+            2drop close-port
+            exit
+        then
+
+        global-env obj@ eval
+        2drop
+    again
+;
+
+\ }}}
+
 \ ---- REPL ----
 
 : repl
     cr ." Welcome to scheme.forth.jl!" cr
        ." Use Ctrl-D to exit." cr
 
-    
     empty-parse-str
 
     enable-gc
 
     begin
         cr bold fg green ." > " reset-term
-        read
+        read-console
+
+        2dup EOF character-type objeq? if
+            bold fg blue ." Moriturus te saluto." reset-term cr
+            exit
+        then
 
         global-env obj@ eval
 
         fg cyan ." ; " print reset-term
     again
 ;
+
+: test s" fact.scm" ;
+test load
 
 forth definitions
 
