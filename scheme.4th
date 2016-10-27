@@ -1481,6 +1481,7 @@ include scheme-primitives.4th
         read-console
 
         2dup EOF character-type objeq? if
+            2drop
             bold fg blue ." Moriturus te saluto." reset-term cr
             exit
         then
