@@ -37,7 +37,7 @@ make-type fileport-type
 : istype? ( obj type -- obj bool )
     over = ;
 
-\ ------ List-structured memory ------ {{{
+\ ---- List-structured memory ---- {{{
 
 10000 constant scheme-memsize
 
@@ -268,14 +268,15 @@ objvar symbol-table
     does> dup @ swap 1+ @
 ;
 
-create-symbol quote     quote-symbol
-create-symbol define    define-symbol
-create-symbol set!      set!-symbol
-create-symbol ok        ok-symbol
-create-symbol if        if-symbol
-create-symbol lambda    lambda-symbol
-create-symbol λ         λ-symbol
-create-symbol begin     begin-symbol
+create-symbol quote         quote-symbol
+create-symbol define        define-symbol
+create-symbol define-macro  define-macro-symbol
+create-symbol set!          set!-symbol
+create-symbol ok            ok-symbol
+create-symbol if            if-symbol
+create-symbol lambda        lambda-symbol
+create-symbol λ             λ-symbol
+create-symbol begin         begin-symbol
 
 \ }}}
 
@@ -970,6 +971,9 @@ parse-idx-stack parse-idx-sp !
     ok-symbol
 ;
 
+: macro-definition? ( obj -- obj bool )
+    define-macro-symbol tagged-list? ;
+
 : if? ( obj -- obj bool )
     if-symbol tagged-list? ;
 
@@ -1045,7 +1049,7 @@ parse-idx-stack parse-idx-sp !
     2drop car 2swap ( finalexp env )
 ;
 
-: application? ( obj -- obj bool)
+: application? ( obj -- obj bool )
     pair-type istype? ;
 
 : operator ( obj -- operator )
@@ -1160,6 +1164,11 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
+    macro-definition? if
+        2swap eval-define-macro
+        exit
+    then
+
     if? if
         2over 2over
         if-predicate
@@ -1189,12 +1198,27 @@ parse-idx-stack parse-idx-sp !
     then
 
     application? if
-        2over 2over
-        operator 2swap eval
-        -2rot
-        operands 2swap list-of-vals
 
-        apply
+        2over 2over
+        operator
+
+        find-macro-proc nil objeq? if
+            \ Regular function application
+
+            2swap eval
+            -2rot
+            operands 2swap list-of-vals
+
+            apply
+        else
+            \ Macro function evaluation
+
+            2swap 2drop 2swap ( env mproc exp )
+
+            apply 2swap ( expanded-exp env )
+
+            ['] eval goto-deferred
+        then
         exit
     then
 
