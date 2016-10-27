@@ -271,6 +271,7 @@ create-symbol ok        ok-symbol
 create-symbol if        if-symbol
 create-symbol lambda    lambda-symbol
 create-symbol λ         λ-symbol
+create-symbol begin     begin-symbol
 
 \ }}}
 
@@ -1007,6 +1008,35 @@ parse-idx-stack parse-idx-sp !
     drop compound-proc-type
 ;
 
+: begin? ( obj -- obj bool )
+    begin-symbol tagged-list? ;
+
+: begin-actions ( obj -- actions )
+    cdr ;
+
+: eval-sequence ( explist env -- finalexp env )
+    ( Evaluates all bar the final expressions in
+      an an expression list. The final expression
+      is returned to allow for tail optimization. )
+
+    2swap ( env explist )
+
+    \ Abort on empty list
+    2dup nil objeq? if 2swap exit then
+
+    begin
+        2dup cdr ( env explist nextexplist )
+        2dup nil objeq? false =
+    while
+        -2rot car 2over ( nextexplist env exp env )
+        eval
+        2drop \ discard result
+        2swap ( env nextexplist )
+    repeat
+
+    2drop car 2swap ( finalexp env )
+;
+
 : application? ( obj -- obj bool)
     pair-type istype? ;
 
@@ -1059,19 +1089,7 @@ parse-idx-stack parse-idx-sp !
 
                 extend-env ( body env )
 
-                2swap ( env body )
-
-                begin
-                    2dup cdr 2dup nil objeq? false =
-                while
-                    -2rot car 2over ( nextbody env exp env )
-                    eval
-                    2drop \ discard result
-                    2swap ( env nextbody )
-                repeat
-
-                2drop ( env body )
-                car 2swap ( exp env )
+                eval-sequence
 
                 R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
@@ -1130,6 +1148,10 @@ parse-idx-stack parse-idx-sp !
         2swap lambda-body
         2rot make-procedure
         exit
+    then
+
+    begin? if
+        \ TODO
     then
 
     application? if
