@@ -28,6 +28,7 @@ make-type boolean-type
 make-type character-type
 make-type string-type
 make-type nil-type
+make-type none-type
 make-type pair-type
 make-type symbol-type
 make-type primitive-proc-type
@@ -111,6 +112,9 @@ variable nextfree
 
 : nil 0 nil-type ;
 : nil? nil-type istype? ;
+
+: none 0 none-type ;
+: none? none-type istype? ;
 
 : objvar create nil swap , , ;
 
@@ -886,6 +890,7 @@ parse-idx-stack parse-idx-sp !
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
+    none-type istype? if true exit then
 
     false
 ;
@@ -1022,7 +1027,10 @@ parse-idx-stack parse-idx-sp !
     2swap ( env explist )
 
     \ Abort on empty list
-    2dup nil objeq? if 2swap exit then
+    2dup nil objeq? if
+        2drop none
+        2swap exit
+    then
 
     begin
         2dup cdr ( env explist nextexplist )
@@ -1151,7 +1159,9 @@ parse-idx-stack parse-idx-sp !
     then
 
     begin? if
-        \ TODO
+        begin-actions 2swap
+        eval-sequence
+        ['] eval goto-deferred
     then
 
     application? if
@@ -1238,6 +1248,9 @@ parse-idx-stack parse-idx-sp !
 : printcomp ( primobj -- )
     2drop ." <compound procedure>" ;
 
+: printnone ( noneobj -- )
+    2drop ." Unspecified return value" ;
+
 :noname ( obj -- )
     fixnum-type istype? if printfixnum exit then
     realnum-type istype? if printrealnum exit then
@@ -1249,6 +1262,7 @@ parse-idx-stack parse-idx-sp !
     pair-type istype? if ." (" printpair ." )" exit then
     primitive-proc-type istype? if printprim exit then
     compound-proc-type istype? if printcomp exit then
+    none-type istype? if printnone exit then
 
     bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
     abort
