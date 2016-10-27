@@ -392,9 +392,64 @@ objvar env
 
 hide env
 
+: make-procedure ( params body env -- proc )
+    nil
+    cons cons cons
+    drop compound-proc-type
+;
+
 objvar global-env
 nil nil nil extend-env
 global-env obj!
+
+\ }}}
+
+\ ---- Macros ---- {{{
+
+objvar macro-table
+
+: lookup-macro ( name_symbol -- proc? bool )
+    macro-table obj@
+
+    begin
+        nil? false =
+    while
+        2over 2over
+        car car objeq? if
+            2swap 2drop
+            car cdr
+            true exit
+        then
+    repeat
+
+    2drop false
+;
+
+: make-macro ( name_symbol params body env -- )
+    make-procedure
+
+    2swap ( proc name_symbol )
+
+    macro-table obj@
+
+    begin
+        nil? false =
+    while
+        2over 2over ( proc name table name table )
+        car car objeq? if
+            2swap 2drop ( proc table )
+            car ( proc entry )
+            set-cdr!
+            exit
+        then
+    repeat
+
+    2drop
+
+    2swap cons
+    macro-table obj@ cons
+    macro-table obj!
+;
 
 \ }}}
 
@@ -1011,12 +1066,6 @@ parse-idx-stack parse-idx-sp !
 : lambda-body ( obj -- body )
     cdr cdr ;
 
-: make-procedure ( params body env -- proc )
-    nil
-    cons cons cons
-    drop compound-proc-type
-;
-
 : begin? ( obj -- obj bool )
     begin-symbol tagged-list? ;
 
@@ -1405,6 +1454,7 @@ variable gc-stack-depth
     gc-unmark
 
     symbol-table obj@ gc-mark-obj
+    macro-table obj@ gc-mark-obj
     global-env obj@ gc-mark-obj
 
     depth gc-stack-depth @ do
