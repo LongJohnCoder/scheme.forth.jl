@@ -1084,16 +1084,40 @@ parse-idx-stack parse-idx-sp !
 : procedure-env ( proc -- body )
     drop pair-type cdr cdr car ;
 
-: apply ( proc args )
+( Ensure terminating symbol arg name is handled
+  specially to allow for variadic procedures. )
+: flatten-proc-args ( argvals argnames -- argvals' argnames' )
+    nil? if exit then
+
+    symbol-type istype? if
+        nil cons
+        2swap
+        nil cons
+        2swap
+        exit
+    then
+
+    2over cdr 2over cdr
+    recurse ( argvals argnames argvals'' argnames'' )
+    2rot car 2swap cons  ( argvals argvals'' argnames' )
+    2rot car 2rot cons ( argnames' argvals' )
+    2swap
+;
+
+: apply ( proc argvals )
         2swap dup case
             primitive-proc-type of
                 drop execute
             endof
 
             compound-proc-type of
-                2dup procedure-body ( args proc body )
-                -2rot 2dup procedure-params ( body args proc params )
-                -2rot procedure-env ( body params args procenv )
+                2dup procedure-body ( argvals proc body )
+                -2rot 2dup procedure-params ( body argvals proc argnames )
+                -2rot procedure-env ( body argnames argvals procenv )
+
+                -2rot 2swap
+                flatten-proc-args
+                2swap 2rot
 
                 extend-env ( body env )
 
