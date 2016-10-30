@@ -180,7 +180,7 @@ console-i/o-port obj@ current-input-port obj!
 objvar symbol-table
 
 : duplicate-charlist ( charlist -- copy )
-    2dup nil objeq? false = if
+    nil? false = if
         2dup car 2swap cdr recurse cons
     then ;
 
@@ -336,7 +336,7 @@ objvar vals
 : get-vars-vals ( var env -- vars? vals? bool )
 
     begin
-        2dup nil objeq? false =
+        nil? false =
     while
         2over 2over first-frame
         get-vars-vals-frame if
@@ -422,7 +422,11 @@ objvar macro-table
             car cdr
             exit
         then
+
+        cdr
     repeat
+
+    2swap 2drop
 ;
 
 : make-macro ( name_symbol params body env -- )
@@ -442,6 +446,8 @@ objvar macro-table
             set-cdr!
             exit
         then
+
+        cdr
     repeat
 
     2drop
@@ -1065,7 +1071,7 @@ hide env
 
 : if-alternative ( ifobj -- alt|false )
     cdr cdr cdr
-    2dup nil objeq? if
+    nil? if
         2drop false
     else
         car
@@ -1105,14 +1111,14 @@ hide env
     2swap ( env explist )
 
     \ Abort on empty list
-    2dup nil objeq? if
+    nil? if
         2drop none
         2swap exit
     then
 
     begin
         2dup cdr ( env explist nextexplist )
-        2dup nil objeq? false =
+        nil? false =
     while
         -2rot car 2over ( nextexplist env exp env )
         eval
@@ -1276,7 +1282,7 @@ hide env
         2over 2over ( env exp env exp )
         operator 2dup ( env exp env opname opname )
 
-        lookup-macro 2dup nil objeq? if
+        lookup-macro nil? if
             \ Regular function application
 
             2drop ( env exp env opname )
@@ -1290,11 +1296,13 @@ hide env
         else
             \ Macro function evaluation
 
-            ( env exp env opname mproc )
-            2swap 2drop -2rot 2drop  ( env mproc exp )
-            apply 2swap ( expanded-exp env )
+            ." Macro eval"
 
-            ['] eval goto-deferred
+            ( env exp env opname mproc )
+            2swap 2drop -2rot 2drop cdr ( env mproc body )
+
+            \ TODO: evaluate macro procedure on expression body
+            ." ABORTED: Macros not yet fully implemented!" abort
         then
         exit
     then
@@ -1531,7 +1539,7 @@ variable gc-stack-depth
             arg-count-error
         then
     else
-        -rot 2dup nil objeq? if
+        -rot nil? if
             arg-count-error
         then
         
@@ -1561,7 +1569,7 @@ include scheme-primitives.4th
     dup 2swap ( origaddr addr charlist )
 
     begin 
-        2dup nil objeq? false =
+        nil? false =
     while
         2dup cdr 2swap car 
         drop ( origaddr addr charlist char )

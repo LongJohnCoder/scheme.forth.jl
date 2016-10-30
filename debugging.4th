@@ -38,3 +38,6 @@
 
     trace
 ;
+
+: abort-with-trace
+    stack-trace abort ;
