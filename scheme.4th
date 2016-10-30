@@ -408,7 +408,9 @@ global-env obj!
 
 objvar macro-table
 
-: lookup-macro ( name_symbol -- proc? bool )
+( Look up macro in macro table. Returns nil if
+  no macro is found. )
+: lookup-macro ( name_symbol -- proc )
     macro-table obj@
 
     begin
@@ -418,11 +420,9 @@ objvar macro-table
         car car objeq? if
             2swap 2drop
             car cdr
-            true exit
+            exit
         then
     repeat
-
-    2drop false
 ;
 
 : make-macro ( name_symbol params body env -- )
@@ -1029,6 +1029,31 @@ parse-idx-stack parse-idx-sp !
 : macro-definition? ( obj -- obj bool )
     define-macro-symbol tagged-list? ;
 
+: macro-definition-name ( exp -- mname )
+    cdr car car ;
+
+: macro-definition-params ( exp -- params )
+    cdr car cdr ;
+
+: macro-definition-body ( exp -- body )
+    cdr cdr ;
+
+objvar env
+: eval-define-macro ( obj env -- res )
+    env obj!
+
+    2dup macro-definition-name 2swap ( name obj )
+    2dup macro-definition-params 2swap ( name params obj )
+    macro-definition-body ( name params body )
+
+    env obj@ ( name params body env )
+
+    make-macro
+
+    ok-symbol
+;
+hide env
+
 : if? ( obj -- obj bool )
     if-symbol tagged-list? ;
 
@@ -1248,22 +1273,25 @@ parse-idx-stack parse-idx-sp !
 
     application? if
 
-        2over 2over
-        operator
+        2over 2over ( env exp env exp )
+        operator 2dup ( env exp env opname opname )
 
-        find-macro-proc nil objeq? if
+        lookup-macro 2dup nil objeq? if
             \ Regular function application
 
-            2swap eval
-            -2rot
-            operands 2swap list-of-vals
+            2drop ( env exp env opname )
+
+            2swap eval ( env exp proc )
+            -2rot ( proc env exp )
+            operands 2swap ( proc operands env )
+            list-of-vals ( proc argvals )
 
             apply
         else
             \ Macro function evaluation
 
-            2swap 2drop 2swap ( env mproc exp )
-
+            ( env exp env opname mproc )
+            2swap 2drop -2rot 2drop  ( env mproc exp )
             apply 2swap ( expanded-exp env )
 
             ['] eval goto-deferred
