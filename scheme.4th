@@ -239,7 +239,7 @@ objvar symbol-table
 ;
 
 
-: cstr>charlist ( addr n -- symbol-obj )
+: cstr>charlist ( addr n -- charlist )
     dup 0= if
         2drop nil
     else
@@ -256,13 +256,7 @@ objvar symbol-table
     count
 
     cstr>charlist
-    drop symbol-type
-
-    2dup
-
-    symbol-table obj@
-    cons
-    symbol-table obj!
+    charlist>symbol
 
     create swap , ,
     does> dup @ swap 1+ @
@@ -277,6 +271,7 @@ create-symbol if            if-symbol
 create-symbol lambda        lambda-symbol
 create-symbol λ             λ-symbol
 create-symbol begin         begin-symbol
+create-symbol apply         apply-symbol
 
 \ }}}
 
@@ -1191,7 +1186,7 @@ hide env
 : apply ( proc argvals -- result )
         2swap dup case
             primitive-proc-type of
-                drop execute
+                drop execute     
             endof
 
             compound-proc-type of
@@ -1293,21 +1288,29 @@ hide env
     application? if
 
         2over 2over ( env exp env exp )
-        operator 2dup ( env exp env opname opname )
+        operator ( env exp env opname )
 
-        lookup-macro nil? if
-            \ Regular function application
+        2dup apply-symbol objeq? if
 
-            2drop ( env exp env opname )
+            2drop 2swap ( env env exp )
+            cdr 2dup car 2rot ( env expbody real-opname env )
+            eval ( env expbody proc )
+            2swap cdr
+            nil? false = if car then ( env proc real-operand )
 
-            2swap eval ( env exp proc )
-            -2rot ( proc env exp )
-            operands 2swap ( proc operands env )
-            list-of-vals ( proc argvals )
+            2rot eval ( proc argvals )
+
+            pair-type istype? false = if
+                bold fg red ." Error: apply requires a list of operand arguments." cr
+                reset-term abort
+            then
 
             apply
-        else
-            \ Macro function evaluation
+            exit
+        then
+
+        2dup lookup-macro nil? false = if
+             \ Macro function evaluation
 
             ( env exp env opname mproc )
             2swap 2drop -2rot 2drop cdr ( env mproc body )
@@ -1319,6 +1322,17 @@ hide env
             2swap
             ['] eval goto-deferred
         then
+
+       \ Regular function application
+
+        2drop ( env exp env opname )
+
+        2swap eval ( env exp proc )
+        -2rot ( proc env exp )
+        operands 2swap ( proc operands env )
+        list-of-vals ( proc argvals )
+
+        apply
         exit
     then
 
@@ -1574,14 +1588,8 @@ variable gc-stack-depth
     \ 2dup ." Defining primitive " type ." ..." cr
 
     cstr>charlist
-    drop symbol-type
-    
-    2dup
-
-    symbol-table obj@
-    cons
-    symbol-table obj!
-
+    charlist>symbol
+  
     rot primitive-proc-type ( var prim )
     global-env obj@ define-var
 ;
