@@ -1188,7 +1188,7 @@ hide env
     2swap
 ;
 
-: apply ( proc argvals )
+: apply ( proc argvals -- result )
         2swap dup case
             primitive-proc-type of
                 drop execute
@@ -1210,9 +1210,22 @@ hide env
                 R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
 
-            bold fg red ." Object not applicable. Aboring." reset-term cr
+            bold fg red ." Object not applicable. Aborting." reset-term cr
             abort
         endcase
+;
+
+: macro-expand ( proc expbody -- result )
+    2swap
+    2dup procedure-body ( expbody proc procbody )
+    -2rot 2dup procedure-params ( procbody expbody proc argnames )
+    -2rot procedure-env ( procbody argnames expbody procenv )
+    
+    -2rot 2swap
+    flatten-proc-args
+    2swap 2rot
+
+    extend-env eval-sequence eval
 ;
 
 :noname ( obj env -- result )
@@ -1296,13 +1309,15 @@ hide env
         else
             \ Macro function evaluation
 
-            ." Macro eval"
-
             ( env exp env opname mproc )
             2swap 2drop -2rot 2drop cdr ( env mproc body )
 
-            \ TODO: evaluate macro procedure on expression body
-            ." ABORTED: Macros not yet fully implemented!" abort
+            2dup print cr
+            macro-expand
+            2dup print cr
+
+            2swap
+            ['] eval goto-deferred
         then
         exit
     then
@@ -1507,6 +1522,49 @@ variable gc-stack-depth
 
 \ }}}
 
+\ ---- Loading files ---- {{{
+
+: charlist>cstr ( charlist addr -- n )
+
+    dup 2swap ( origaddr addr charlist )
+
+    begin 
+        nil? false =
+    while
+        2dup cdr 2swap car 
+        drop ( origaddr addr charlist char )
+        -rot 2swap ( origaddr charlist addr char )
+        over !
+        1+ -rot ( origaddr nextaddr charlist )
+    repeat
+
+    2drop ( origaddr finaladdr ) 
+    swap -
+;
+
+: load ( addr n -- finalResult )
+    open-input-file
+
+    empty-parse-str
+
+    ok-symbol ( port res )
+
+    begin
+        2over read-port ( port res obj )
+
+        2dup EOF character-type objeq? if
+            2drop 2swap close-port
+            exit
+        then
+
+        2swap 2drop ( port obj )
+
+        global-env obj@ eval ( port res )
+    again
+;
+
+\ }}}
+
 \ ---- Primitives ---- {{{
 
 : make-primitive ( cfa -- )
@@ -1559,58 +1617,6 @@ variable gc-stack-depth
 ;
 
 include scheme-primitives.4th
-
-\ }}}
-
-\ ---- Loading files ---- {{{
-
-: charlist>cstr ( charlist addr -- n )
-
-    dup 2swap ( origaddr addr charlist )
-
-    begin 
-        nil? false =
-    while
-        2dup cdr 2swap car 
-        drop ( origaddr addr charlist char )
-        -rot 2swap ( origaddr charlist addr char )
-        over !
-        1+ -rot ( origaddr nextaddr charlist )
-    repeat
-
-    2drop ( origaddr finaladdr ) 
-    swap -
-;
-
-: load ( addr n -- finalResult )
-    open-input-file
-
-    empty-parse-str
-
-    ok-symbol ( port res )
-
-    begin
-        2over read-port ( port res obj )
-
-        2dup EOF character-type objeq? if
-            2drop 2swap close-port
-            exit
-        then
-
-        2swap 2drop ( port obj )
-
-        global-env obj@ eval ( port res )
-    again
-;
-
-:noname ( args -- finalResult )
-    2dup 1 ensure-arg-count
-    car string-type ensure-arg-type
-
-    drop pair-type
-    pad charlist>cstr
-    pad swap load
-; make-primitive load
 
 \ }}}
 

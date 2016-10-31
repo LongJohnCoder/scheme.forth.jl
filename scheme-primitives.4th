@@ -1,4 +1,4 @@
-( = Type predicates = )
+( ==== Type predicates ==== )
 
 :noname ( args -- boolobj )
     2dup 1 ensure-arg-count
@@ -48,7 +48,7 @@
     car primitive-proc-type istype? -rot 2drop boolean-type
 ; make-primitive procedure?
 
-( = Type conversions = )
+( ==== Type conversions ==== )
 
 :noname ( args -- fixnum )
     2dup 1 ensure-arg-count
@@ -153,7 +153,7 @@
     charlist>symbol
 ; make-primitive string->symbol
 
-( = Arithmetic = )
+( ==== Arithmetic ==== )
 
 : add-prim ( args -- fixnum )
     2dup nil objeq? if
@@ -284,7 +284,7 @@ variable relcfa
 
 hide relcfa
 
-( = Pairs and Lists = )
+( ==== Pairs and Lists ==== )
 
 :noname ( args -- pair )
     2dup 2 ensure-arg-count
@@ -331,7 +331,7 @@ hide relcfa
     ok-symbol
 ; make-primitive set-cdr!
 
-( = Polymorphic equality testing = )
+( ==== Polymorphic equality testing ==== )
 
 :noname ( args -- bool )
     2dup 2 ensure-arg-count
@@ -340,3 +340,32 @@ hide relcfa
 
     objeq? boolean-type
 ; make-primitive eq?
+
+( ==== Input/Output ==== )
+
+:noname ( args -- finalResult )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    drop pair-type
+    pad charlist>cstr
+    pad swap load
+; make-primitive load
+
+' read make-primitive read
+
+:noname ( args -- )
+    2dup 1 ensure-arg-count
+
+    car print cr
+
+    none
+; make-primitive write
+
+( ==== Evaluation ==== )
+
+:noname 
+    \ Dummy apply procedure
+    \ Should never actually run!
+    ." Error: Dummy apply procedure executed!" cr
+; make-primitive apply
