@@ -1620,6 +1620,12 @@ include scheme-primitives.4th
 
 \ }}}
 
+\ ---- Standard Library ---- {{{
+
+    s" scheme-library.scm" load 2drop
+    
+\ }}}
+
 \ ---- REPL ----
 
 : repl

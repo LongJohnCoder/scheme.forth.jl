@@ -354,13 +354,70 @@ hide relcfa
 
 ' read make-primitive read
 
-:noname ( args -- )
+defer display
+:noname ( args -- none )
     2dup 1 ensure-arg-count
 
     car print cr
 
     none
 ; make-primitive write
+
+: displaypair ( pairobj -- )
+    2dup
+    car display
+    cdr
+    nil-type istype? if 2drop exit then
+    pair-type istype? if space recurse exit then
+    ."  . " display
+;
+
+: displaychar ( charobj -- )
+    drop emit
+;
+
+:noname ( obj -- )
+    pair-type istype? if ." (" displaypair ." )" exit then
+    character-type istype? if displaychar exit then
+    string-type istype? if (printstring) exit then
+    
+    print
+; is display
+
+:noname ( args -- none )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    (printstring) cr
+
+    none
+; make-primitive display-string
+
+:noname ( args -- none )
+    2dup 1 ensure-arg-count
+    car character-type ensure-arg-type
+
+    displaychar cr
+
+    none
+; make-primitive display-character
+
+:noname ( args -- none )
+    2dup 1 ensure-arg-count
+    car
+
+    display cr
+
+    none
+; make-primitive display
+
+:noname ( args -- none )
+    0 ensure-arg-count
+
+    cr
+
+    none
+; make-primitive newline
 
 ( ==== Evaluation ==== )
 
