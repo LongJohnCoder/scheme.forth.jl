@@ -1022,19 +1022,32 @@ parse-idx-stack parse-idx-sp !
 : make-lambda ( params body -- lambda-exp )
     lambda-symbol -2rot cons cons ;
 
-: definition-var ( obj -- var )
-    cdr car
-    symbol-type istype? false = if car then
+( Handles recursive expansion of defines in
+  terms of nested lambdas. Most Schemes only
+  handle one level of expansion! )
+: (definition-var-val) ( val var -- val' var' )
+    symbol-type istype? if 2swap car 2swap exit then
+
+    2dup cdr 2swap car
+    symbol-type istype? if
+        2swap ( body procname procargs )
+        2rot ( procname procargs body )
+        make-lambda ( procname lambda-exp )
+        2swap
+        exit
+    then
+
+    ( body procargs nextval )
+    -2rot 2swap ( nextval procargs body )
+    make-lambda nil cons ( nextval lambda-exp )
+    2swap ( lambda-exp nextval )
+    recurse
 ;
 
-: definition-val ( obj -- val )
-    2dup cdr car symbol-type istype? if
-        2drop
-        cdr cdr car
-    else
-        cdr 2swap cdr cdr
-        make-lambda
-    then
+: definition-var-val ( obj -- var val )
+    cdr 2dup cdr 2swap car
+    (definition-var-val)
+    2swap
 ;
 
 : assignment? ( obj -- obj bool )
@@ -1047,12 +1060,9 @@ parse-idx-stack parse-idx-sp !
     cdr cdr car ;
 
 : eval-definition ( obj env -- res )
-    2swap 
-    2over 2over ( env obj env obj )
-    definition-val 2swap ( env obj valexp env )
-    eval  ( env obj val )
-    
-    2swap definition-var 2swap ( env var val )
+    2dup 2rot ( env env obj )
+    definition-var-val ( env env var val )
+    2rot eval  ( env var val )
 
     2rot ( var val env )
     define-var
@@ -1213,7 +1223,15 @@ hide env
 ( Ensure terminating symbol arg name is handled
   specially to allow for variadic procedures. )
 : flatten-proc-args ( argvals argnames -- argvals' argnames' )
-    nil? if exit then
+    nil? if
+        2over nil? false = if
+            bold fg red ." Too many arguments supplied to compound method. Aborting." reset-term cr
+            abort
+        else
+            2drop
+        then
+        exit
+    then
 
     symbol-type istype? if
         nil cons
@@ -1223,7 +1241,16 @@ hide env
         exit
     then
 
-    2over cdr 2over cdr
+    2over
+    nil? if
+        bold fg red ." Too few arguments supplied to compound method. Aborting." reset-term cr
+        abort
+    else
+        cdr
+    then
+
+    2over cdr
+
     recurse ( argvals argnames argvals'' argnames'' )
     2rot car 2swap cons  ( argvals argvals'' argnames' )
     2rot car 2rot cons ( argnames' argvals' )
