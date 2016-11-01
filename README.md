@@ -8,9 +8,7 @@ life as a fairly direct port of Peter Micheaux's [Bootstrap
 Scheme](https://github.com/petermichaux/bootstrap-scheme) (as described in
 [this wonderful series of blog
 posts](http://peter.michaux.ca/articles/scheme-from-scratch-introduction)) from
-C to forth.  In addition, this interpreter has a mark-sweep garbage collector
-and support for reading input from external files using a partial implementation
-of Scheme's file ports.
+C to forth, but also includes a basic mark-sweep garbage collector.
 
 In future, I plan to also implement a macro system and a more
 complete numerical tower to bring it closer to
