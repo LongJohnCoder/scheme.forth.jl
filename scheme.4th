@@ -1630,7 +1630,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    \ s" scheme-library.scm" load 2drop
+    s" scheme-library.scm" load 2drop
     
 \ }}}
 

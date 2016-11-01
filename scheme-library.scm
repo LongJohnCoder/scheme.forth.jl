@@ -21,6 +21,11 @@
       (car lists)
       (join (car lists) (apply append (cdr lists))))))
 
+; Reverse the contents of a list
+(define (reverse l)
+  (if (null? l)
+    ()
+    (append (reverse (cdr l)) (list (car l)))))
 
 ;; LIBRARY FORMS
 (define-macro (let value . body )
