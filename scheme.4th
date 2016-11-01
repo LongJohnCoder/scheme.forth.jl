@@ -262,15 +262,18 @@ objvar symbol-table
     does> dup @ swap 1+ @
 ;
 
-create-symbol quote         quote-symbol
-create-symbol define        define-symbol
-create-symbol define-macro  define-macro-symbol
-create-symbol set!          set!-symbol
-create-symbol ok            ok-symbol
-create-symbol if            if-symbol
-create-symbol lambda        lambda-symbol
-create-symbol λ             λ-symbol
-create-symbol begin         begin-symbol
+create-symbol quote             quote-symbol
+create-symbol quasiquote        quasiquote-symbol
+create-symbol unquote           unquote-symbol
+create-symbol unquote-splicing  unquote-splicing-symbol
+create-symbol define            define-symbol
+create-symbol define-macro      define-macro-symbol
+create-symbol set!              set!-symbol
+create-symbol ok                ok-symbol
+create-symbol if                if-symbol
+create-symbol lambda            lambda-symbol
+create-symbol λ                 λ-symbol
+create-symbol begin             begin-symbol
 
 \ }}}
 
@@ -964,6 +967,21 @@ parse-idx-stack parse-idx-sp !
     nextchar [char] ' = if
         inc-parse-idx
         quote-symbol recurse nil cons cons exit
+    then
+
+    nextchar [char] ` = if
+        inc-parse-idx
+        quasiquote-symbol recurse nil cons cons exit
+    then
+
+    nextchar [char] , = if
+        inc-parse-idx
+        nextchar [char] @ = if
+            inc-parse-idx
+            unquote-splicing-symbol recurse nil cons cons exit
+        else
+            unquote-symbol recurse nil cons cons exit
+        then
     then
 
     eof? if
