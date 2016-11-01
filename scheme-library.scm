@@ -28,10 +28,11 @@
     (append (reverse (cdr l)) (list (car l)))))
 
 ;; LIBRARY FORMS
-(define-macro (let value . body )
-              (list (list 'lambda (list (car value)) body)) (cdr value))
 
 ;; TESTING
+
+(define-macro (backwards . body)
+              (cons 'begin (reverse body)))
 
 ; Basic iterative summation.  Run this on large numbers to
 ; test garbage collection and tail-call optimization.

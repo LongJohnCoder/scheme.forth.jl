@@ -1361,9 +1361,7 @@ hide env
             ( env exp env opname mproc )
             2swap 2drop -2rot 2drop cdr ( env mproc body )
 
-            2dup print cr
             macro-expand
-            2dup print cr
 
             2swap
             ['] eval goto-deferred
