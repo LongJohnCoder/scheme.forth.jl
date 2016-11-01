@@ -1230,14 +1230,6 @@ hide env
     2swap
 ;
 
-:noname
-    \ Dummy apply procedure
-    \ Should never actually run!
-    ." Error: Dummy apply procedure executed!" cr
-; dup make-primitive apply
-objvar dummy-apply-proc
-primitive-proc-type dummy-apply-proc obj!
-
 : apply ( proc argvals -- result )
         2swap dup case
             primitive-proc-type of
@@ -1357,39 +1349,20 @@ primitive-proc-type dummy-apply-proc obj!
 
             2swap
             ['] eval goto-deferred
-        then
+        else
+           \ Regular function application
 
-       \ Regular function application
+            2drop ( env exp env opname )
 
-        2drop ( env exp env opname )
+            2swap eval ( env exp proc )
 
-        2swap eval ( env exp proc )
-
-        2dup dummy-apply-proc obj@ objeq? if
-            2drop ( env exp )
-            cdr 2over 2over car ( env expbody env real-opname )
-            2swap eval ( env expbody proc )
-
-            2swap cdr
-            nil? false = if car then ( env proc real-operand )
-
-            2rot eval ( proc argvals )
-
-            pair-type istype? false = if
-                bold fg red ." Error: apply requires a list of operand arguments." cr
-                reset-term abort
-            then
+            -2rot ( proc env exp )
+            operands 2swap ( proc operands env )
+            list-of-vals ( proc argvals )
 
             apply
             exit
-        then 
-
-        -2rot ( proc env exp )
-        operands 2swap ( proc operands env )
-        list-of-vals ( proc argvals )
-
-        apply
-        exit
+        then
     then
 
     bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr

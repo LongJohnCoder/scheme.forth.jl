@@ -418,3 +418,13 @@ defer display
 
     none
 ; make-primitive newline
+
+( ==== Evaluation ==== )
+
+:noname ( args -- result )
+    2dup car 2swap cdr
+
+    nil? false = if car then ( proc argvals )
+    
+    apply
+; make-primitive apply 
