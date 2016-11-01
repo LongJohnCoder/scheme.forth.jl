@@ -1022,42 +1022,24 @@ parse-idx-stack parse-idx-sp !
 : make-lambda ( params body -- lambda-exp )
     lambda-symbol -2rot cons cons ;
 
-( Handles recursive expansion of defines in
+( Handles iterative expansion of defines in
   terms of nested lambdas. Most Schemes only
-  handle one level of expansion! )
-: (definition-var-val) ( val var -- val' var' )
-    symbol-type istype? if 2swap car 2swap exit then
-
-    2dup cdr 2swap car
-    symbol-type istype? if
-        2swap ( body procname procargs )
-        2rot ( procname procargs body )
-        make-lambda ( procname lambda-exp )
-        2swap
-        exit
-    then
-
-    ( body procargs nextval )
-    -2rot 2swap ( nextval procargs body )
-    make-lambda nil cons ( nextval lambda-exp )
-    2swap ( lambda-exp nextval )
-    recurse
-;
-
+  handle one iteration of expansion! )
 : definition-var-val ( obj -- var val )
-    cdr 2dup cdr 2swap car
-    (definition-var-val)
-    2swap
+
+    cdr 2dup cdr 2swap car ( val var )
+
+    begin
+        symbol-type istype? false =
+    while
+        2dup cdr 2swap car ( val formals var' )
+        -2rot 2swap ( var' formals val )
+        make-lambda nil cons ( var' val' )
+        2swap ( val' var' )
+    repeat
+
+    2swap car
 ;
-
-: assignment? ( obj -- obj bool )
-    set!-symbol tagged-list? ;
-
-: assignment-var ( obj -- var )
-    cdr car ;
-    
-: assignment-val ( obj -- val )
-    cdr cdr car ;
 
 : eval-definition ( obj env -- res )
     2dup 2rot ( env env obj )
@@ -1069,7 +1051,16 @@ parse-idx-stack parse-idx-sp !
 
     ok-symbol
 ;
+
+: assignment? ( obj -- obj bool )
+    set!-symbol tagged-list? ;
+
+: assignment-var ( obj -- var )
+    cdr car ;
     
+: assignment-val ( obj -- val )
+    cdr cdr car ;
+
 : eval-assignment ( obj env -- res )
     2swap 
     2over 2over ( env obj env obj )
@@ -1639,7 +1630,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    s" scheme-library.scm" load 2drop
+    \ s" scheme-library.scm" load 2drop
     
 \ }}}
 

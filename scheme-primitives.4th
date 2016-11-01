@@ -358,7 +358,7 @@ defer display
 :noname ( args -- none )
     2dup 1 ensure-arg-count
 
-    car print cr
+    car print
 
     none
 ; make-primitive write
@@ -388,7 +388,7 @@ defer display
     2dup 1 ensure-arg-count
     car string-type ensure-arg-type
 
-    (printstring) cr
+    (printstring)
 
     none
 ; make-primitive display-string
@@ -397,7 +397,7 @@ defer display
     2dup 1 ensure-arg-count
     car character-type ensure-arg-type
 
-    displaychar cr
+    displaychar
 
     none
 ; make-primitive display-character
@@ -406,7 +406,7 @@ defer display
     2dup 1 ensure-arg-count
     car
 
-    display cr
+    display
 
     none
 ; make-primitive display
