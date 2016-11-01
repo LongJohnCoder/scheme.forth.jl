@@ -271,7 +271,6 @@ create-symbol if            if-symbol
 create-symbol lambda        lambda-symbol
 create-symbol λ             λ-symbol
 create-symbol begin         begin-symbol
-create-symbol apply         apply-symbol
 
 \ }}}
 
@@ -396,6 +395,54 @@ hide env
 objvar global-env
 nil nil nil extend-env
 global-env obj!
+
+\ }}}
+
+\ ---- Primitives ---- {{{
+
+: make-primitive ( cfa -- )
+    bl word
+    count
+
+    \ 2dup ." Defining primitive " type ." ..." cr
+
+    cstr>charlist
+    charlist>symbol
+  
+    rot primitive-proc-type ( var prim )
+    global-env obj@ define-var
+;
+
+: arg-count-error
+            bold fg red ." Incorrect argument count." reset-term cr
+            abort
+;
+
+: ensure-arg-count ( args n -- )
+    dup 0= if
+        drop nil objeq? false = if
+            arg-count-error
+        then
+    else
+        -rot nil? if
+            arg-count-error
+        then
+        
+        cdr rot 1- recurse
+    then
+;
+
+: arg-type-error
+            bold fg red ." Incorrect argument type." reset-term cr
+            abort
+;
+
+: ensure-arg-type ( arg type -- arg )
+    istype? false = if
+        arg-type-error
+    then
+;
+
 
 \ }}}
 
@@ -1183,6 +1230,14 @@ hide env
     2swap
 ;
 
+:noname
+    \ Dummy apply procedure
+    \ Should never actually run!
+    ." Error: Dummy apply procedure executed!" cr
+; dup make-primitive apply
+objvar dummy-apply-proc
+primitive-proc-type dummy-apply-proc obj!
+
 : apply ( proc argvals -- result )
         2swap dup case
             primitive-proc-type of
@@ -1290,25 +1345,6 @@ hide env
         2over 2over ( env exp env exp )
         operator ( env exp env opname )
 
-        2dup apply-symbol objeq? if
-
-            2drop 2swap ( env env exp )
-            cdr 2dup car 2rot ( env expbody real-opname env )
-            eval ( env expbody proc )
-            2swap cdr
-            nil? false = if car then ( env proc real-operand )
-
-            2rot eval ( proc argvals )
-
-            pair-type istype? false = if
-                bold fg red ." Error: apply requires a list of operand arguments." cr
-                reset-term abort
-            then
-
-            apply
-            exit
-        then
-
         2dup lookup-macro nil? false = if
              \ Macro function evaluation
 
@@ -1328,6 +1364,26 @@ hide env
         2drop ( env exp env opname )
 
         2swap eval ( env exp proc )
+
+        2dup dummy-apply-proc obj@ objeq? if
+            2drop ( env exp )
+            cdr 2over 2over car ( env expbody env real-opname )
+            2swap eval ( env expbody proc )
+
+            2swap cdr
+            nil? false = if car then ( env proc real-operand )
+
+            2rot eval ( proc argvals )
+
+            pair-type istype? false = if
+                bold fg red ." Error: apply requires a list of operand arguments." cr
+                reset-term abort
+            then
+
+            apply
+            exit
+        then 
+
         -2rot ( proc env exp )
         operands 2swap ( proc operands env )
         list-of-vals ( proc argvals )
@@ -1579,56 +1635,9 @@ variable gc-stack-depth
 
 \ }}}
 
-\ ---- Primitives ---- {{{
-
-: make-primitive ( cfa -- )
-    bl word
-    count
-
-    \ 2dup ." Defining primitive " type ." ..." cr
-
-    cstr>charlist
-    charlist>symbol
-  
-    rot primitive-proc-type ( var prim )
-    global-env obj@ define-var
-;
-
-: arg-count-error
-            bold fg red ." Incorrect argument count." reset-term cr
-            abort
-;
-
-: ensure-arg-count ( args n -- )
-    dup 0= if
-        drop nil objeq? false = if
-            arg-count-error
-        then
-    else
-        -rot nil? if
-            arg-count-error
-        then
-        
-        cdr rot 1- recurse
-    then
-;
-
-: arg-type-error
-            bold fg red ." Incorrect argument type." reset-term cr
-            abort
-;
-
-: ensure-arg-type ( arg type -- arg )
-    istype? false = if
-        arg-type-error
-    then
-;
-
-include scheme-primitives.4th
-
-\ }}}
-
 \ ---- Standard Library ---- {{{
+
+    include scheme-primitives.4th
 
     s" scheme-library.scm" load 2drop
     

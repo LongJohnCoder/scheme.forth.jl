@@ -418,11 +418,3 @@ defer display
 
     none
 ; make-primitive newline
-
-( ==== Evaluation ==== )
-
-:noname 
-    \ Dummy apply procedure
-    \ Should never actually run!
-    ." Error: Dummy apply procedure executed!" cr
-; make-primitive apply
