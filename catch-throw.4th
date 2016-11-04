@@ -1,6 +1,7 @@
 \ Exception handling
 
 variable handler
+0 handler !
 
 : catch ( cfa -- exception# | 0 )
     psp@ >R
@@ -15,7 +16,12 @@ variable handler
 : throw ( ... exception# -- ... exception# )
     ?dup 0= if exit then
 
-    handler @ rsp!
+    handler @ ?dup 0= if
+        ." Aborting: Uncaught exception " . ." ." cr
+        abort
+    then
+
+    rsp!
     R> handler !
     
     R> swap >R

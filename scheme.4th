@@ -3,6 +3,7 @@ scheme definitions
 
 include term-colours.4th
 include defer-is.4th
+include catch-throw.4th
 include float.4th
 
 include debugging.4th
@@ -13,7 +14,7 @@ defer print
 
 defer collect-garbage
 
-\ ------ Types ------
+\ ---- Types ---- {{{
 
 variable nexttype
 0 nexttype !
@@ -36,6 +37,41 @@ make-type compound-proc-type
 make-type fileport-type
 : istype? ( obj type -- obj bool )
     over = ;
+
+\ }}}
+
+\ ---- Exceptions ---- {{{
+
+variable nextexception
+1 nextexception !
+: make-exception 
+    create nextexception @ ,
+    1 nextexception +!
+    does> @ ;
+
+make-exception recoverable-exception
+make-exception unrecoverable-exception
+
+: display-warning ( addr count -- )
+    bold fg red
+    ." Exception: "
+    type
+    reset-term ;
+
+: throw" immediate 
+    [compile] s"
+
+    ['] rot , ['] dup ,
+
+    [compile] if
+        ['] -rot ,
+        ['] display-warning ,
+    [compile] then
+
+    ['] throw ,
+;
+
+\ }}}
 
 \ ---- List-structured memory ---- {{{
 
@@ -65,9 +101,7 @@ variable nextfree
     then
 
     nextfree @ scheme-memsize >= if
-        fg red bold
-        ." Out of memory! Aborting."
-        reset-term abort
+        unrecoverable-exception throw s" Out of memory!"
     then
 ;
 
@@ -356,7 +390,7 @@ hide vals
     get-vars-vals if
         2swap 2drop car
     else
-        bold fg red ." Tried to read unbound variable." reset-term cr abort
+        recoverable-exception throw" Tried to read unbound variable."
     then
 ;
 
@@ -366,7 +400,7 @@ hide vals
         2swap 2drop ( val vals )
         set-car!
     else
-        bold fg red ." Tried to set unbound variable." reset-term cr abort
+        recoverable-exception throw" Tried to set unbound variable."
     then
 ;
 
@@ -416,19 +450,14 @@ global-env obj!
     global-env obj@ define-var
 ;
 
-: arg-count-error
-            bold fg red ." Incorrect argument count." reset-term cr
-            abort
-;
-
 : ensure-arg-count ( args n -- )
     dup 0= if
         drop nil objeq? false = if
-            arg-count-error
+            recoverable-exception throw" Too many arguments for primitive procedure."
         then
     else
         -rot nil? if
-            arg-count-error
+            recoverable-exception throw" Too few arguments for primitive procedure."
         then
         
         cdr rot 1- recurse
@@ -442,7 +471,7 @@ global-env obj!
 
 : ensure-arg-type ( arg type -- arg )
     istype? false = if
-        arg-type-error
+        recoverable-exception throw" Incorrect argument type for primitive procedure."
     then
 ;
 
@@ -1234,8 +1263,7 @@ hide env
 : flatten-proc-args ( argvals argnames -- argvals' argnames' )
     nil? if
         2over nil? false = if
-            bold fg red ." Too many arguments supplied to compound method. Aborting." reset-term cr
-            abort
+            recoverable-exception throw" Too many arguments for compound procedure."
         else
             2drop
         then
@@ -1252,8 +1280,7 @@ hide env
 
     2over
     nil? if
-        bold fg red ." Too few arguments supplied to compound method. Aborting." reset-term cr
-        abort
+        recoverable-exception throw" Too few arguments for compound procedure."
     else
         cdr
     then
@@ -1288,8 +1315,7 @@ hide env
                 R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
 
-            bold fg red ." Object not applicable. Aborting." reset-term cr
-            abort
+            recoverable-exception throw" Object not applicable."
         endcase
 ;
 
@@ -1399,8 +1425,7 @@ hide env
         then
     then
 
-    bold fg red ." Error evaluating expression - unrecognized type. Aborting." reset-term cr
-    abort
+    recoverable-exception throw" Tried to evaluate object with unknown type."
 ; is eval
 
 \ }}}
@@ -1489,8 +1514,7 @@ hide env
     compound-proc-type istype? if printcomp exit then
     none-type istype? if printnone exit then
 
-    bold fg red ." Error printing expression - unrecognized type. Aborting" reset-term cr
-    abort
+    recoverable-exception throw" Tried to print object with unknown type."
 ; is print
 
 \ }}}
@@ -1652,6 +1676,25 @@ variable gc-stack-depth
 
 \ ---- REPL ----
 
+( REPL calls REPL-BODY in a loop until repl-body returns true. )
+: repl-body ( -- bool )
+    cr bold fg green ." > " reset-term
+
+    read-console
+
+    2dup EOF character-type objeq? if
+        2drop
+        bold fg blue ." Moriturus te saluto." reset-term cr
+        true exit
+    then
+
+    global-env obj@ eval
+
+    fg cyan ." ; " print reset-term
+
+    false
+;
+
 : repl
     cr ." Welcome to scheme.forth.jl!" cr
        ." Use Ctrl-D to exit." cr
@@ -1661,19 +1704,18 @@ variable gc-stack-depth
     enable-gc
 
     begin
-        cr bold fg green ." > " reset-term
-        read-console
+        ['] repl-body catch
+        case
+            recoverable-exception of false endof
+            unrecoverable-exception of true endof
 
-        2dup EOF character-type objeq? if
-            2drop
-            bold fg blue ." Moriturus te saluto." reset-term cr
-            exit
-        then
+            \ Rethrow anything else:
+            throw
 
-        global-env obj@ eval
-
-        fg cyan ." ; " print reset-term
-    again
+            \ If we're still here, loop again
+            false
+        endcase
+    until
 ;
 
 forth definitions
