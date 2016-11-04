@@ -367,19 +367,31 @@ defer display
     2dup
     car display
     cdr
-    nil-type istype? if 2drop exit then
+    nil? if 2drop exit then
     pair-type istype? if space recurse exit then
     ."  . " display
 ;
 
 : displaychar ( charobj -- )
-    drop emit
+    drop emit ;
+
+: (displaystring) ( charlist -- )
+    nil? if
+        2drop
+    else
+        2dup car displaychar
+        cdr recurse
+    then
+;
+
+: displaystring ( stringobj -- )
+    drop pair-type (displaystring)
 ;
 
 :noname ( obj -- )
     pair-type istype? if ." (" displaypair ." )" exit then
     character-type istype? if displaychar exit then
-    string-type istype? if (printstring) exit then
+    string-type istype? if displaystring exit then
     
     print
 ; is display
@@ -388,7 +400,7 @@ defer display
     2dup 1 ensure-arg-count
     car string-type ensure-arg-type
 
-    (printstring)
+    displaystring
 
     none
 ; make-primitive display-string

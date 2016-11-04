@@ -1456,7 +1456,7 @@ hide env
 ;
 
 : (printstring) ( stringobj -- )
-    nil-type istype? if 2drop exit then
+    nil? if 2drop exit then
 
     2dup car drop dup
     case
