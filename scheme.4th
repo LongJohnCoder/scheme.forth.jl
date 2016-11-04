@@ -52,7 +52,7 @@ variable nextexception
 make-exception recoverable-exception
 make-exception unrecoverable-exception
 
-: display-warning ( addr count -- )
+: display-exception-msg ( addr count -- )
     bold fg red
     ." Exception: "
     type
@@ -65,7 +65,7 @@ make-exception unrecoverable-exception
 
     [compile] if
         ['] -rot ,
-        ['] display-warning ,
+        ['] display-exception-msg ,
     [compile] then
 
     ['] throw ,
@@ -1709,11 +1709,7 @@ variable gc-stack-depth
             recoverable-exception of false endof
             unrecoverable-exception of true endof
 
-            \ Rethrow anything else:
-            throw
-
-            \ If we're still here, loop again
-            false
+            throw false
         endcase
     until
 ;

@@ -440,3 +440,19 @@ defer display
     
     apply
 ; make-primitive apply 
+
+( ==== Error System ==== )
+
+:noname ( args -- result )
+    bold fg red
+
+    nil? if
+        ." Error."
+    else
+        ." Error: " car display
+    then
+
+    reset-term
+
+    recoverable-exception throw
+; make-primitive error
