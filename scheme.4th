@@ -1247,10 +1247,10 @@ hide env
 : if-consequent ( ifobj -- conseq )
     cdr cdr car ;
 
-: if-alternative ( ifobj -- alt|false )
+: if-alternative ( ifobj -- alt|none )
     cdr cdr cdr
     nil? if
-        2drop false
+        2drop none
     else
         car
     then ;

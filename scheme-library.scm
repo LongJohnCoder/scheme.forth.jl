@@ -29,10 +29,27 @@
 
 ;; LIBRARY FORMS
 
+(define-macro (while condition . body)
+              `(begin
+                 (define (loop)
+                   (if ,condition
+                     (begin ,@body (loop))))
+                 (loop)))
+
 ;; TESTING
 
 (define-macro (backwards . body)
               (cons 'begin (reverse body)))
+
+(define method '(while (> counter 0)
+                       (display counter) (newline)
+                       (set! counter (- counter 1))))
+
+(define (count)
+  (define counter 10)
+  (while (> counter 0)
+         (display counter) (newline)
+         (set! counter (- counter 1))))
 
 ; Basic iterative summation.  Run this on large numbers to
 ; test garbage collection and tail-call optimization.
