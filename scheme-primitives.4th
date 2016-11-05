@@ -352,7 +352,10 @@ hide relcfa
     pad swap load
 ; make-primitive load
 
-' read make-primitive read
+:noname ( args -- obj )
+    0 ensure-arg-count
+    read
+; make-primitive read
 
 defer display
 :noname ( args -- none )

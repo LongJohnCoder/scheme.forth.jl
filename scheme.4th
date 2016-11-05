@@ -1060,6 +1060,70 @@ parse-idx-stack parse-idx-sp !
 : quote-body ( quote-obj -- quote-body-obj )
     cadr ;
 
+: quasiquote? ( obj -- obj bool )
+    quasiquote-symbol tagged-list? ;
+
+: unquote? ( obj -- obj bool )
+    unquote-symbol tagged-list?
+;
+
+: eval-unquote ( env obj -- res )
+    cdr ( env args )
+
+    nil? if
+        recoverable-exception throw" no arguments to unquote."
+    then
+
+    2dup cdr
+    nil? false = if
+        recoverable-exception throw" too many arguments to unquote."
+    then
+
+    2drop car 2swap eval
+;
+
+: (eval-quasiquote) ( env obj -- res )
+    nil? if
+        2swap 2drop exit
+    then
+
+    2over 2over car ( env obj env obj-car )
+
+    unquote? if
+        eval-unquote
+    else
+        2swap 2drop
+    then
+
+    -2rot cdr ( caritem env cdr )
+    recurse ( caritem cdritems )
+    cons
+;
+
+: eval-quasiquote ( obj env -- res )
+    2swap cdr ( env args )
+
+    nil? if
+        recoverable-exception throw" no arguments to quasiquote."
+    then
+
+    2dup cdr ( env args args-cdr )
+    nil? false = if
+        recoverable-exception throw" too many arguments to quasiquote."
+    then
+
+    2drop car ( env arg )
+
+    unquote? if
+        eval-unquote exit
+    then
+
+    pair-type istype? if
+        (eval-quasiquote) exit
+    then
+
+    2swap 2drop ;
+
 : variable? ( obj -- obj bool )
     symbol-type istype? ;
 
@@ -1343,6 +1407,11 @@ hide env
     quote? if
         quote-body
         2swap 2drop
+        exit
+    then
+
+    quasiquote? if
+        2swap eval-quasiquote
         exit
     then
 
