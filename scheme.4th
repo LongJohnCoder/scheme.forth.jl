@@ -1064,8 +1064,10 @@ parse-idx-stack parse-idx-sp !
     quasiquote-symbol tagged-list? ;
 
 : unquote? ( obj -- obj bool )
-    unquote-symbol tagged-list?
-;
+    unquote-symbol tagged-list? ;
+
+: unquote-splicing? ( obj -- obj bool )
+    unquote-splicing-symbol tagged-list? ;
 
 : eval-unquote ( env obj -- res )
     cdr ( env args )
@@ -1082,6 +1084,15 @@ parse-idx-stack parse-idx-sp !
     2drop car 2swap eval
 ;
 
+( Create a new list from elements of l1 consed on to l2 )
+: join-lists ( l2 l1 -- l3 )
+    nil? if 2drop exit then
+
+    2dup car
+    -2rot cdr
+    recurse cons
+;
+
 defer eval-quasiquote-item
 : eval-quasiquote-list ( env obj -- res )
     nil? if
@@ -1090,10 +1101,22 @@ defer eval-quasiquote-item
 
     2over 2over ( env obj env obj )
 
-    car eval-quasiquote-item ( env obj caritem )
+    cdr recurse
+    -2rot car ( cdritems env objcar )
 
-    -2rot cdr recurse ( caritem cdritems )
-    cons
+    unquote-splicing? if
+        eval-unquote ( cdritems caritem )
+
+        2swap nil? if
+            2drop
+        else
+            2swap join-lists
+        then
+    else
+        eval-quasiquote-item ( cdritems caritem )
+        2swap cons
+    then
+
 ;
 
 :noname ( env obj )
@@ -1570,6 +1593,9 @@ hide env
 
 : printnone ( noneobj -- )
     2drop ." Unspecified return value" ;
+
+: printport ( port -- )
+    2drop ." <port>" ;
 
 :noname ( obj -- )
     fixnum-type istype? if printfixnum exit then
