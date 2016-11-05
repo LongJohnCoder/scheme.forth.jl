@@ -1082,23 +1082,31 @@ parse-idx-stack parse-idx-sp !
     2drop car 2swap eval
 ;
 
-: (eval-quasiquote) ( env obj -- res )
+defer eval-quasiquote-item
+: eval-quasiquote-list ( env obj -- res )
     nil? if
         2swap 2drop exit
     then
 
-    2over 2over car ( env obj env obj-car )
+    2over 2over ( env obj env obj )
 
-    unquote? if
-        eval-unquote
-    else
-        2swap 2drop
-    then
+    car eval-quasiquote-item ( env obj caritem )
 
-    -2rot cdr ( caritem env cdr )
-    recurse ( caritem cdritems )
+    -2rot cdr recurse ( caritem cdritems )
     cons
 ;
+
+:noname ( env obj )
+    unquote? if
+        eval-unquote exit
+    then
+
+    pair-type istype? if
+        eval-quasiquote-list exit
+    then
+
+    2swap 2drop
+; is eval-quasiquote-item
 
 : eval-quasiquote ( obj env -- res )
     2swap cdr ( env args )
@@ -1114,15 +1122,8 @@ parse-idx-stack parse-idx-sp !
 
     2drop car ( env arg )
 
-    unquote? if
-        eval-unquote exit
-    then
-
-    pair-type istype? if
-        (eval-quasiquote) exit
-    then
-
-    2swap 2drop ;
+    eval-quasiquote-item
+;
 
 : variable? ( obj -- obj bool )
     symbol-type istype? ;
