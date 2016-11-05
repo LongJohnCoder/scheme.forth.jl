@@ -41,10 +41,7 @@
 (define-macro (backwards . body)
               (cons 'begin (reverse body)))
 
-(define method '(while (> counter 0)
-                       (display counter) (newline)
-                       (set! counter (- counter 1))))
-
+; Test for the while macro.
 (define (count)
   (define counter 10)
   (while (> counter 0)

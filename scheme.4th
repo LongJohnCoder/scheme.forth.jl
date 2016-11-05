@@ -1094,15 +1094,12 @@ parse-idx-stack parse-idx-sp !
 ;
 
 defer eval-quasiquote-item
-: eval-quasiquote-list ( env obj -- res )
-    nil? if
-        2swap 2drop exit
-    then
-
+: eval-quasiquote-pair ( env obj -- res )
     2over 2over ( env obj env obj )
 
-    cdr recurse
-    -2rot car ( cdritems env objcar )
+    cdr eval-quasiquote-item
+
+    -2rot car ( cdritem env objcar )
 
     unquote-splicing? if
         eval-unquote ( cdritems caritem )
@@ -1120,12 +1117,16 @@ defer eval-quasiquote-item
 ;
 
 :noname ( env obj )
+    nil? if
+        2swap 2drop exit
+    then
+
     unquote? if
         eval-unquote exit
     then
 
     pair-type istype? if
-        eval-quasiquote-list exit
+        eval-quasiquote-pair exit
     then
 
     2swap 2drop
@@ -1407,6 +1408,7 @@ hide env
         endcase
 ;
 
+( Simply evaluates the given procedure with expbody as its argument. )
 : macro-expand ( proc expbody -- result )
     2swap
     2dup procedure-body ( expbody proc procbody )
