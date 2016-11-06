@@ -64,6 +64,28 @@
 
 ; cond
 
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+
+(define (expand-clauses clauses)
+  (if (null? clauses)
+    (none)
+    (let ((first (car clauses))
+          (rest (cdr clauses)))
+      (if (cond-else-clause? first)
+        (if (null? rest)
+          `(begin ,@(cond-actions first))
+          (error "else clause isn't last in cond expression."))
+        `(if ,(cond-predicate first)
+           (begin ,@(cond-actions first))
+           ,(expand-clauses rest))))))
+
+(define-macro (cond . clauses)
+              (if (null? clauses)
+                (error "cond requires at least one clause.")
+                (expand-clauses clauses)))
 
 ;; TESTING
 

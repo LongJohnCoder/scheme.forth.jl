@@ -483,6 +483,13 @@ defer display
     drop symbol-type
 ; make-primitive gensym
 
+( Generate the NONE object indicating an unspecified return value. )
+:noname ( args -- result )
+    0 ensure-arg-count
+    
+    none
+; make-primitive none
+
 \ }}}
 
 \ vim:fdm=marker
