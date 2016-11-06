@@ -13,6 +13,14 @@
 (define (cddr l) (cdr (cdr l)))
 (define (cadar l) (car (cdr (car l))))
 
+; Return number of items in list
+(define (length l)
+  (define (iter a count)
+    (if (null? a)
+      count
+      (iter (cdr a) (+ count 1))))
+  (iter l 0))
+
 ; Join two lists together
 (define (join l1 l2)
   (if (null? l1)
