@@ -1,4 +1,4 @@
-( ==== Type predicates ==== )
+\ ==== Type predicates ==== {{{
 
 :noname ( args -- boolobj )
     2dup 1 ensure-arg-count
@@ -48,7 +48,9 @@
     car primitive-proc-type istype? -rot 2drop boolean-type
 ; make-primitive procedure?
 
-( ==== Type conversions ==== )
+\ }}}
+
+\ ==== Type conversions ==== {{{
 
 :noname ( args -- fixnum )
     2dup 1 ensure-arg-count
@@ -153,7 +155,9 @@
     charlist>symbol
 ; make-primitive string->symbol
 
-( ==== Arithmetic ==== )
+\ }}}
+
+\ ==== Arithmetic ==== {{{
 
 : add-prim ( args -- fixnum )
     2dup nil objeq? if
@@ -284,7 +288,9 @@ variable relcfa
 
 hide relcfa
 
-( ==== Pairs and Lists ==== )
+\ }}}
+
+\ ==== Pairs and Lists ==== {{{
 
 :noname ( args -- pair )
     2dup 2 ensure-arg-count
@@ -297,21 +303,21 @@ hide relcfa
     \ args is already a list!
 ; make-primitive list
 
-:noname ( args -- pair )
+:noname ( args -- obj )
     2dup 1 ensure-arg-count
     car pair-type ensure-arg-type
 
     car
 ; make-primitive car
 
-:noname ( args -- pair )
+:noname ( args -- obj )
     2dup 1 ensure-arg-count
     car pair-type ensure-arg-type
 
     cdr
 ; make-primitive cdr
 
-:noname ( args -- pair )
+:noname ( args -- ok )
     2dup 2 ensure-arg-count
     2dup cdr car
     2swap car pair-type ensure-arg-type
@@ -321,7 +327,7 @@ hide relcfa
     ok-symbol
 ; make-primitive set-car!
 
-:noname ( args -- pair )
+:noname ( args -- ok )
     2dup 2 ensure-arg-count
     2dup cdr car
     2swap car pair-type ensure-arg-type
@@ -331,7 +337,9 @@ hide relcfa
     ok-symbol
 ; make-primitive set-cdr!
 
-( ==== Polymorphic equality testing ==== )
+\ }}}
+
+\ ==== Polymorphic equality testing ==== {{{
 
 :noname ( args -- bool )
     2dup 2 ensure-arg-count
@@ -341,7 +349,9 @@ hide relcfa
     objeq? boolean-type
 ; make-primitive eq?
 
-( ==== Input/Output ==== )
+\ }}}
+
+\ ==== Input/Output ==== {{{
 
 :noname ( args -- finalResult )
     2dup 1 ensure-arg-count
@@ -434,7 +444,9 @@ defer display
     none
 ; make-primitive newline
 
-( ==== Evaluation ==== )
+\ }}}
+
+\ ==== Evaluation ==== {{{
 
 :noname ( args -- result )
     2dup car 2swap cdr
@@ -444,8 +456,11 @@ defer display
     apply
 ; make-primitive apply 
 
-( ==== Error System ==== )
+\ }}}
 
+\ ==== Miscellaneous  ==== {{{
+
+( Produce a recoverable exception. )
 :noname ( args -- result )
     bold fg red
 
@@ -459,3 +474,15 @@ defer display
 
     recoverable-exception throw
 ; make-primitive error
+
+( Generate a temporary unique symbol. Used in the creation of hygienic macros. )
+:noname ( args -- result )
+    0 ensure-arg-count
+
+    [char] _  character-type nil cons
+    drop symbol-type
+; make-primitive gensym
+
+\ }}}
+
+\ vim:fdm=marker

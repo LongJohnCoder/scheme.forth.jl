@@ -7,6 +7,12 @@
 (define (null? args)
   (eq? args ()))
 
+(define (caar l) (car (car l)))
+(define (cadr l) (car (cdr l)))
+(define (cdar l) (cdr (car l)))
+(define (cddr l) (cdr (cdr l)))
+(define (cadar l) (car (cdr (car l))))
+
 ; Join two lists together
 (define (join l1 l2)
   (if (null? l1)
@@ -29,12 +35,32 @@
 
 ;; LIBRARY FORMS
 
+
+; let
+
+(define (let-vars args)
+  (if (null? args)
+    '()
+    (cons (caar args) (let-vars (cdr args)))))
+
+(define (let-inits args)
+  (if (null? args)
+    '()
+  (cons (cadar args) (let-inits (cdr args)))))
+
+(define-macro (let args . body)
+              `((lambda ,(let-vars args)
+                 ,@body) ,@(let-inits args)))
+
+; while
+
 (define-macro (while condition . body)
+              (define loop (gensym))
               `(begin
-                 (define (loop)
+                 (define (,loop)
                    (if ,condition
-                     (begin ,@body (loop))))
-                 (loop)))
+                     (begin ,@body (,loop))))
+                 (,loop)))
 
 ;; TESTING
 

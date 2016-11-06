@@ -139,11 +139,6 @@ variable nextfree
     cdr-cells + !
 ;
 
-: caar car car ;
-: cadr cdr car ;
-: cdar car cdr ;
-: cddr cdr cdr ;
-
 : nil 0 nil-type ;
 : nil? nil-type istype? ;
 
@@ -1058,7 +1053,7 @@ parse-idx-stack parse-idx-sp !
     quote-symbol tagged-list?  ;
 
 : quote-body ( quote-obj -- quote-body-obj )
-    cadr ;
+    cdr car ;
 
 : quasiquote? ( obj -- obj bool )
     quasiquote-symbol tagged-list? ;
