@@ -90,16 +90,18 @@
 ; and
 
 (define (expand-and-expressions expressions)
-  (if (null? expressions)
-    #t
-    (let ((first (car expressions))
-          (rest (cdr expressions)))
+  (let ((first (car expressions))
+        (rest (cdr expressions)))
+    (if (null? rest)
+      first
       `(if ,first
          ,(expand-and-expressions rest)
          #f))))
 
 (define-macro (and . expressions)
-              (expand-and-expressions expressions))
+              (if (null? expressions)
+                #t
+                (expand-and-expressions expressions)))
 
 ; or
 
@@ -107,10 +109,12 @@
   (if (null? expressions)
     #f
     (let ((first (car expressions))
-          (rest (cdr expressions)))
-      `(if ,first
-         #t
-         ,(expand-or-expressions rest)))))
+          (rest (cdr expressions))
+          (val (gensym)))
+      `(let ((,val ,first))
+         (if ,val
+            ,val
+            ,(expand-or-expressions rest))))))
 
 (define-macro (or . expressions)
               (expand-or-expressions expressions))
