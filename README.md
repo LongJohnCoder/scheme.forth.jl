@@ -8,8 +8,9 @@ life as a fairly direct port of Peter Micheaux's [Bootstrap
 Scheme](https://github.com/petermichaux/bootstrap-scheme) (as described in
 [this wonderful series of blog
 posts](http://peter.michaux.ca/articles/scheme-from-scratch-introduction)) from
-C to forth, but also includes a basic mark-sweep garbage collector, quasiquotation,
-and a very basic (non-hygenic) macro system.
+C to forth, but also includes variadic compound function support, mark-sweep
+garbage collection, quasiquotation, and a very basic (non-hygenic) macro
+system.
 
 In future, I plan to also implement a more complete numerical tower to bring it closer to
 [R5RS](http://www.schemers.org/Documents/Standards/R5RS/).

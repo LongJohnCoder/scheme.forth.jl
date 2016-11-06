@@ -33,8 +33,8 @@
     ()
     (append (reverse (cdr l)) (list (car l)))))
 
-;; LIBRARY FORMS
 
+;; LIBRARY SPECIAL FORMS
 
 ; let
 
@@ -55,12 +55,15 @@
 ; while
 
 (define-macro (while condition . body)
-              (define loop (gensym))
-              `(begin
-                 (define (,loop)
-                   (if ,condition
-                     (begin ,@body (,loop))))
-                 (,loop)))
+              (let ((loop (gensym)))
+                `(begin
+                   (define (,loop)
+                     (if ,condition
+                       (begin ,@body (,loop))))
+                   (,loop))))
+
+; cond
+
 
 ;; TESTING
 
