@@ -87,6 +87,35 @@
                 (error "cond requires at least one clause.")
                 (expand-clauses clauses)))
 
+; and
+
+(define (expand-and-expressions expressions)
+  (if (null? expressions)
+    #t
+    (let ((first (car expressions))
+          (rest (cdr expressions)))
+      `(if ,first
+         ,(expand-and-expressions rest)
+         #f))))
+
+(define-macro (and . expressions)
+              (expand-and-expressions expressions))
+
+; or
+
+(define (expand-or-expressions expressions)
+  (if (null? expressions)
+    #f
+    (let ((first (car expressions))
+          (rest (cdr expressions)))
+      `(if ,first
+         #t
+         ,(expand-or-expressions rest)))))
+
+(define-macro (or . expressions)
+              (expand-or-expressions expressions))
+
+
 ;; TESTING
 
 (define-macro (backwards . body)
