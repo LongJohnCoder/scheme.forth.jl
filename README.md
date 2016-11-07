@@ -18,6 +18,44 @@ In future, I plan to also implement a more complete numerical tower to bring it 
 The goal is for the interpreter to be complete enough to be used to complete
 the majority of the exercises found in [SICP](http://sarabander.github.io/sicp/).
 
+Running the interpreter
+=======================
+
+To run this Scheme interpreter, first open Julia from the directory that contains
+this README file. If you've not done so already, install forth.jl using the
+following command:
+
+    julia> Pkg.clone("https://github.com/tgvaughan/forth.jl")
+
+Then, import and run the Forth system:
+
+    julia> import forth
+    julia> forth.run()
+    Welcome to forth.jl!
+
+Once Forth is running, execute the Scheme source and fire up the
+REPL using the following commands:
+
+    include scheme.4th  ok
+    scheme repl
+    Welcome to scheme.forth.jl!
+    Use Ctrl-D to exit.
+
+    >
+
+At this point you can start entering Scheme commands.  For example,
+
+    > (define (factorial n)
+        (if (= n 0)
+          1
+          (* n (factorial (- n 1)))))
+    ; ok
+    > (factorial 5)
+    ; 120
+
+License
+=======
+
 This software is free (as in freedom) and is distributed under the terms
 of version 3 of the GNU General Public License.  A copy of this license
 is included in this repository in the file COPYING.
