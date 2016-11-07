@@ -21,8 +21,8 @@ the majority of the exercises found in [SICP](http://sarabander.github.io/sicp/)
 Running the interpreter
 =======================
 
-To run this Scheme interpreter, first open Julia from the directory that contains
-this README file. If you've not done so already, install forth.jl using the
+To run this Scheme interpreter, first open Julia from the src directory contained
+in this repository.  If you've not done so already, install forth.jl using the
 following command:
 
     julia> Pkg.clone("https://github.com/tgvaughan/forth.jl")
