@@ -29,3 +29,53 @@ CODE f/
     a = reinterpret(Float64, popPS())
     pushPS(reinterpret(Int64, a/b))
 END-CODE
+
+CODE f^
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a^b))
+END-CODE
+
+CODE f>
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a>b))
+END-CODE
+
+CODE f<
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a<b))
+END-CODE
+
+CODE f=
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a=b))
+END-CODE
+
+CODE f<=
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a<=b))
+END-CODE
+
+CODE f>=
+    b = reinterpret(Float64, popPS())
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, a>=b))
+END-CODE
+
+CODE flog
+    b = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, log(a)))
+END-CODE
+
+CODE fexp
+    b = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, exp(a)))
+END-CODE
+
+CODE i->f
+    pushPS(reinterpret(Int64, Float64(popPS())))
+END-CODE

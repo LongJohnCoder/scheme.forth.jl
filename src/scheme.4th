@@ -24,6 +24,7 @@ variable nexttype
     does> @ ;
 
 make-type fixnum-type
+make-type flonum-type
 make-type boolean-type
 make-type character-type
 make-type string-type
