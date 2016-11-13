@@ -2,10 +2,90 @@
 ;; Standard Library Procedures and Macros ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; NUMBERS
+
+; Arithmetic
+
+(define (null? arg)
+  (eq? arg '()))
+
+(define (fold-left proc init l)
+  (if (null? l)
+    init
+    (fold-left proc (proc init (car l)) (cdr l))))
+
+(define (reduce-left proc init l)
+  (if (null? l)
+    init
+    (if (null? (cdr l))
+      (car l)
+      (fold-left proc (proc (car l) (car (cdr l))) (cdr (cdr l))))))
+
+(define (+ . args)
+  (fold-left fix:+ 0 args))
+
+(define (- first . rest)
+  (if (null? rest)
+    (fix:neg first)
+    (fix:- first (apply + rest))))
+
+(define (* . args)
+  (fold-left fix:* 1 args))
+
+(define (quotient n1 n2)
+  (fix:quotient n1 n2))
+
+(define (remainder n1 n2)
+  (fix:remainder n1 n2))
+
+(define modulo remainder)
+
+(define (1+ n)
+  (fix:1+ n))
+
+(define (-1+ n)
+  (fix:-1+ n))
+
+; Relations
+
+(define (test-relation rel l)
+  (if (null? l)
+    #t
+    (if (null? (cdr l))
+      #t
+      (if (rel (car l) (car (cdr l)))
+        (test-relation rel (cdr l))
+        #f))))
+
+(define (= . args)
+  (test-relation fix:= args))
+
+(define (> . args)
+  (test-relation fix:> args))
+
+(define (< . args)
+  (test-relation fix:< args))
+
+(define (>= . args)
+  (test-relation fix:>= args))
+
+(define (<= . args)
+  (test-relation fix:<= args))
+
+
+
+; Current state of the numerical tower
+(define complex? #f)
+(define real? #f)
+(define rational? #t)
+(define integer? #t)
+(define exact? #t)
+(define inexact? #t)
+
 ;; LISTS
 
-(define (null? args)
-  (eq? args ()))
+(define (list . args) args)
+
 
 (define (caar l) (car (car l)))
 (define (cadr l) (car (cdr l)))

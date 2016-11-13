@@ -29,16 +29,3 @@ CODE f/
     a = reinterpret(Float64, popPS())
     pushPS(reinterpret(Int64, a/b))
 END-CODE
-
-( addr len -- float )
-CODE float-parse
-    len = popPS()
-    addr = popPS()
-    val = parse(Float64, getString(addr, len))
-    pushPS(reinterpret(Int64, val))
-END-CODE
-
-( float -- )
-CODE float-print
-    print(reinterpret(Float64, popPS()))
-END-CODE

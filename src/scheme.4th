@@ -24,7 +24,6 @@ variable nexttype
     does> @ ;
 
 make-type fixnum-type
-make-type realnum-type
 make-type boolean-type
 make-type character-type
 make-type string-type
@@ -436,8 +435,6 @@ global-env obj!
     bl word
     count
 
-    \ 2dup ." Defining primitive " type ." ..." cr
-
     cstr>charlist
     charlist>symbol
   
@@ -458,6 +455,82 @@ global-env obj!
         cdr rot 1- recurse
     then
 ;
+
+: ensure-arg-type-and-count ( tn tn-1 ... t2 t1 args n -- )
+    dup 0= if
+        drop nil objeq? false = if
+            recoverable-exception throw" Too many arguments for primitive procedure."
+        then
+    else
+        -rot nil? if
+            recoverable-exception throw" Too few arguments for primitive procedure."
+        then
+
+        2dup cdr 2swap car ( ... t1 n args' arg1 )
+        2rot 1- swap 2swap rot ( ... args' n-1 arg1 t1 )
+        istype? false = if
+            recoverable-exception throw" Incorrect type for primitive procedure."
+        then
+
+        2drop recurse
+    then
+
+;
+
+: push-args-to-stack ( args -- arg1 arg2 ... argn )
+    begin
+        nil? false =
+    while
+        2dup car 2swap cdr
+    repeat
+
+    2drop
+;
+
+: add-fa-checks ( cfa n -- cfa' )
+    here current @ 1+ dup @ , !
+    0 ,
+    here -rot
+    docol ,
+    ['] 2dup , ['] lit , , ['] ensure-arg-count ,
+    ['] push-args-to-stack ,
+    ['] lit , , ['] execute ,
+    ['] exit ,
+;
+
+: add-fa-type-checks ( cfa t1 t2 ... tn n -- cfa' )
+    here current @ 1+ dup @ , !
+    0 ,
+    here >R
+    docol ,
+    ['] 2dup ,
+    ['] >R , ['] >R ,
+
+    dup ( cfa t1 t2 ... tn n m )
+    
+    begin
+        ?dup 0>
+    while
+        rot ['] lit , , ( cfa t1 t2 ... tn-1 n m )
+        1-
+    repeat
+
+    ['] R> , ['] R> ,
+
+    ['] lit , , ['] ensure-arg-type-and-count ,
+
+    ['] push-args-to-stack ,
+    ['] lit , , ['] execute ,
+    ['] exit ,
+
+    R>
+;
+
+: make-fa-primitive ( cfa n -- )
+    add-fa-checks make-primitive ;
+
+: make-fa-type-primitive ( cfa t1 t2 ... tn n -- )
+    add-fa-type-checks make-primitive ;
 
 : arg-type-error
             bold fg red ." Incorrect argument type." reset-term cr
@@ -667,7 +740,7 @@ parse-idx-stack parse-idx-sp !
     delim? pop-parse-idx
 ;
 
-: realnum? ( -- bool )
+: flonum? ( -- bool )
     push-parse-idx
 
     minus? plus? or if
@@ -799,24 +872,6 @@ parse-idx-stack parse-idx-sp !
     fixnum-type
 ;
 
-: readrealnum ( -- realnum )
-
-    \ Remember that at this point we're guaranteed to
-    \ have a parsable real on this line.
-
-    parse-str parse-idx @ +
-
-    begin delim? false = while
-            inc-parse-idx
-    repeat
-
-    parse-str parse-idx @ + over -
-
-    float-parse
-
-    realnum-type
-;
-
 : readbool ( -- bool-obj )
     inc-parse-idx
     
@@ -938,11 +993,6 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
-    realnum? if
-        readrealnum
-        exit
-    then
-
     boolean? if
         readbool
         exit
@@ -1032,7 +1082,6 @@ parse-idx-stack parse-idx-sp !
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
     fixnum-type istype? if true exit then
-    realnum-type istype? if true exit then
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
@@ -1524,8 +1573,6 @@ hide env
 
 : printfixnum ( fixnumobj -- ) drop 0 .R ;
 
-: printrealnum ( realnumobj -- ) drop float-print ;
-
 : printbool ( numobj -- )
     drop if
         ." #t"
@@ -1596,7 +1643,6 @@ hide env
 
 :noname ( obj -- )
     fixnum-type istype? if printfixnum exit then
-    realnum-type istype? if printrealnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then
