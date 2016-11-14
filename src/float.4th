@@ -79,3 +79,18 @@ END-CODE
 CODE i->f
     pushPS(reinterpret(Int64, Float64(popPS())))
 END-CODE
+
+: f.scientific ( float -- )
+;
+
+: f.plain ( float -- )
+
+;
+
+: f. ( float -- )
+    dup dup 1000000 i->f f>= swap 1 i->f 10000 i->f f/ f< or if
+        f.scientific
+    else
+        f.plain
+    then
+;

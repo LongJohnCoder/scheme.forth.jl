@@ -853,7 +853,7 @@ parse-idx-stack parse-idx-sp !
 : string? ( -- bool )
     nextchar [char] " = ;
 
-: readfixnum ( -- num-atom )
+: readfixnum ( -- fixnum )
     plus? minus? or if
         minus?
         inc-parse-idx
@@ -871,6 +871,26 @@ parse-idx-stack parse-idx-sp !
     swap if negate then
 
     fixnum-type
+;
+
+: readflonum ( -- flonum )
+    \ DRAFT!!!
+    readfixnum drop i->f
+
+    [char] . netchar = if
+        10 i->f
+        begin digit? while
+            nextchar [char] 0 - i->f over f/ f+
+            inc-parse-idx
+        repeat
+    then
+
+    [char] e nextchar = [char] E nextchar = or if
+        readfixnum drop i->f
+        f^
+    then
+
+    flonum-type
 ;
 
 : readbool ( -- bool-obj )
