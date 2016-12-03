@@ -82,6 +82,10 @@
 (define exact? #t)
 (define inexact? #t)
 
+; Logic
+
+(define (not x) (if x #f #t))
+
 ;; LISTS
 
 (define (list . args) args)

@@ -29,7 +29,13 @@
 ; 1 make-fa-primitive pair?
 
 :noname ( args -- boolobj )
-    primitive-proc-type istype? -rot 2drop boolean-type
+    primitive-proc-type istype? if
+        true
+    else
+        compound-proc-type istype?
+    then
+        
+    -rot 2drop boolean-type
 ; 1 make-fa-primitive procedure?
 
 \ }}}
