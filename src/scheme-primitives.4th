@@ -1,4 +1,4 @@
-\ ==== Type predicates ==== {{{
+\ ==== Type predilcates ==== {{{
 
 :noname ( args -- boolobj )
     nil objeq? boolean-type
@@ -15,6 +15,10 @@
 :noname ( args -- boolobj )
     fixnum-type istype? -rot 2drop boolean-type
 ; 1 make-fa-primitive fixnum?
+
+:noname ( args -- boolobj )
+    flonum-type istype? -rot 2drop boolean-type
+; 1 make-fa-primitive flonum?
 
 :noname ( args -- boolobj )
     character-type istype? -rot 2drop boolean-type
@@ -171,15 +175,15 @@
     drop swap drop >= boolean-type
 ; 2 make-fa-primitive fix:>=
 
-:noname ( fixnum fixnum -- boolobj )
+:noname ( fixnum -- boolobj )
     drop 0= boolean-type
 ; 1 make-fa-primitive fix:zero?
 
-:noname ( fixnum fixnum -- boolobj )
+:noname ( fixnum -- boolobj )
     drop 0> boolean-type
 ; 1 make-fa-primitive fix:positive?
 
-:noname ( fixnum fixnum -- boolobj )
+:noname ( fixnum -- boolobj )
     drop 0< boolean-type
 ; 1 make-fa-primitive fix:negative?
 
@@ -219,6 +223,109 @@
 : gcd ( n1 n2 -- m )
     
 ;
+
+\ --- Flonums ---
+
+:noname ( flonum flonum -- bool )
+    objeq? boolean-type
+; 2 make-fa-primitive flo:=
+
+:noname ( flonum flonum -- bool )
+    drop swap drop f< boolean-type
+; 2 make-fa-primitive flo:<
+
+:noname ( flonum flonum -- bool )
+    drop swap drop f> boolean-type
+; 2 make-fa-primitive flo:>
+
+
+:noname ( flonum -- bool )
+    drop 0.0 = boolean-type
+; 1 make-fa-primitive flo:zero?
+
+:noname ( flonum -- bool )
+    drop 0.0 f> boolean-type
+; 1 make-fa-primitive flo:positive?
+
+:noname ( flonum -- bool )
+    drop 0.0 f< boolean-type
+; 1 make-fa-primitive flo:negative?
+
+
+:noname ( flonum1 flonum2 -- flonum1+flonum2 )
+    drop swap drop f+ flonum-type
+; 2 make-fa-primitive flo:+
+
+:noname ( flonum1 flonum2 -- flonum1-flonum2 )
+    drop swap drop f- flonum-type
+; 2 make-fa-primitive flo:-
+
+:noname ( flonum1 flonum2 -- flonum1*flonum2 )
+    drop swap drop f* flonum-type
+; 2 make-fa-primitive flo:*
+
+:noname ( flonum1 flonum2 -- flonum1/flonum2 )
+    drop swap drop f/ flonum-type
+; 2 make-fa-primitive flo:/
+
+:noname ( flonum1 flonum2 -- flonum1/flonum2 )
+    drop swap drop f/ flonum-type
+; 2 make-fa-primitive flo:/
+
+
+:noname ( flonum -- bool )
+    drop dup
+    fnan? swap finf? or invert
+; 1 make-fa-primitive flo:finite?
+
+
+:noname ( flonum -- flonum )
+    swap fabs swap
+; 1 make-fa-primitive flo:abs
+
+:noname ( flonum -- flonum )
+    swap fexp swap
+; 1 make-fa-primitive flo:exp
+
+:noname ( flonum -- flonum )
+    swap flog swap
+; 1 make-fa-primitive flo:log
+
+:noname ( flonum -- flonum )
+    swap fsin swap
+; 1 make-fa-primitive flo:sin
+
+:noname ( flonum -- flonum )
+    swap fcos swap
+; 1 make-fa-primitive flo:cos
+
+:noname ( flonum -- flonum )
+    swap ftan swap
+; 1 make-fa-primitive flo:tan
+
+:noname ( flonum -- flonum )
+    swap fasin swap
+; 1 make-fa-primitive flo:asin
+
+:noname ( flonum -- flonum )
+    swap facos swap
+; 1 make-fa-primitive flo:acos
+
+:noname ( flonum -- flonum )
+    swap fatan swap
+; 1 make-fa-primitive flo:atan
+
+:noname ( flonum -- flonum )
+    swap fsqrt swap
+; 1 make-fa-primitive flo:sqrt
+
+:noname ( flonum flonum -- flonum )
+    drop swap drop f^ flonum-type
+; 2 make-fa-primitive flo:expt
+
+:noname ( flonum -- flonum )
+    swap floor swap
+; 1 make-fa-primitive flo:floor
 
 \ }}}
 

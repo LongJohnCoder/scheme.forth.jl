@@ -2,9 +2,9 @@
 
 ( Cheating for now by using forth.jl CODE/END-CODE to
   access Julia's floating point support.  This isn't
-  at all portable.  That said, the year is 2016 and most
-  CPUs implement these operations - even the trig functions,
-  so I don't feel too bad! )
+  at all portable.  That said, the year is 2016 and
+  I've only cheated for words that have corresponding
+  x87 FPU instructions, so I don't feel too bad! )
 
 CODE f+
     b = reinterpret(Float64, popPS())
@@ -34,6 +34,11 @@ CODE f^
     b = reinterpret(Float64, popPS())
     a = reinterpret(Float64, popPS())
     pushPS(reinterpret(Int64, a^b))
+END-CODE
+
+CODE fsqrt
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, sqrt(a)))
 END-CODE
 
 CODE f>
@@ -88,6 +93,26 @@ CODE fexp
     pushPS(reinterpret(Int64, exp(a)))
 END-CODE
 
+CODE fsin
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, sin(a)))
+END-CODE
+
+CODE fcos
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, cos(a)))
+END-CODE
+
+CODE ftan
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, tan(a)))
+END-CODE
+
+CODE fatan
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, atan(a)))
+END-CODE
+
 CODE fnan?
     a = reinterpret(Float64, popPS())
     if isnan(a)
@@ -115,6 +140,11 @@ CODE f->i
     pushPS(Int64(round(a)))
 END-CODE
 
+CODE fabs
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, abs(a)))
+END-CODE
+
 : f/mod
     2dup fmod -rot f/ ;
 
@@ -133,12 +163,6 @@ END-CODE
 : flog10
     flog [ 10 i->f flog ] literal f/ ;
 
-: fabs
-    dup 0.0 f< if
-        -1.0 f*
-    then
-;
-
 : floor
     dup 0.0 f>= if
         dup 1.0 fmod f-
@@ -149,6 +173,19 @@ END-CODE
             drop
         then
     then
+;
+
+: fasin ( float -- res )
+    dup
+    dup f* 1.0 swap f- fsqrt
+    f/
+
+    fatan
+;
+
+: facos ( float -- res )
+    dup f* 1.0 swap f/ 1.0 f- fsqrt
+    fatan
 ;
 
 : fhead ( float -- )
