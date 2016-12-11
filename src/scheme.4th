@@ -874,20 +874,33 @@ parse-idx-stack parse-idx-sp !
 ;
 
 : readflonum ( -- flonum )
-    \ DRAFT!!!
-    readfixnum drop i->f
+    readfixnum drop
+    dup 0< swap abs i->f
 
-    [char] . netchar = if
-        10 i->f
+    [char] . nextchar = if
+        inc-parse-idx
+
+        10.0 ( f exp )
+
         begin digit? while
-            nextchar [char] 0 - i->f over f/ f+
+            nextchar [char] 0 - i->f ( f exp d )
+            over f/ rot f+ ( exp f' )
+            swap 10.0 f* ( f' exp' )
             inc-parse-idx
         repeat
+
+        drop
     then
 
     [char] e nextchar = [char] E nextchar = or if
+        inc-parse-idx
+        10.0
         readfixnum drop i->f
-        f^
+        f^ f*
+    then
+
+    swap if
+        -1.0 f*
     then
 
     flonum-type
@@ -1014,6 +1027,11 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
+    flonum? if
+        readflonum
+        exit
+    then
+
     boolean? if
         readbool
         exit
@@ -1103,6 +1121,7 @@ parse-idx-stack parse-idx-sp !
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
     fixnum-type istype? if true exit then
+    flonum-type istype? if true exit then
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
@@ -1592,9 +1611,11 @@ hide env
 
 \ ---- Print ---- {{{
 
-: printfixnum ( fixnumobj -- ) drop 0 .R ;
+: printfixnum ( fixnum -- ) drop 0 .R ;
 
-: printbool ( numobj -- )
+: printflonum ( flonum -- ) drop f. ;
+
+: printbool ( bool -- )
     drop if
         ." #t"
     else
@@ -1664,6 +1685,7 @@ hide env
 
 :noname ( obj -- )
     fixnum-type istype? if printfixnum exit then
+    flonum-type istype? if printflonum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then

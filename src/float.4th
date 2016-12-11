@@ -210,12 +210,13 @@ variable precision
     ." e" f->i 0 .R
 ;
 
-: f. ( float -- )
+: f.nospace ( float -- )
     dup fabs dup 1000000 i->f f>= swap 1 i->f 10000 i->f f/ f< or if
         f.scientific
     else
         f.plain
     then
-
-    space
 ;
+
+: f. ( float -- )
+    f.nospace space ;
