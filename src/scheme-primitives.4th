@@ -151,7 +151,7 @@
 
 \ }}}
 
-\ ==== Primitivle Arithmetic ==== {{{
+\ ==== Numeric types ==== {{{
 
 \ --- Fixnums ---
 
@@ -280,6 +280,10 @@
 
 
 :noname ( flonum -- flonum )
+    swap -1.0 f* swap
+; 1 make-fa-primitive flo:neg
+
+:noname ( flonum -- flonum )
     swap fabs swap
 ; 1 make-fa-primitive flo:abs
 
@@ -358,6 +362,13 @@
 :noname ( flonum flonum -- flonum )
     drop swap drop f/ fatan flonum-type
 ; 2 make-fa-primitive flo:atan2
+
+
+\ --- Conversion ---
+
+:noname ( fixnum -- flonum )
+    drop i->f flonum-type
+; 1 make-fa-primitive fixnum->flonum
 
 \ }}}
 

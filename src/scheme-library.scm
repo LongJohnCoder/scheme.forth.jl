@@ -2,9 +2,78 @@
 ;; Standard Library Procedures and Macros ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; MISC
+
+(define (not x) (if x #f #t))
+
+(define (list . args) args)
+
+(define (caar l) (car (car l)))
+(define (cadr l) (car (cdr l)))
+(define (cdar l) (cdr (car l)))
+(define (cddr l) (cdr (cdr l)))
+(define (cadar l) (car (cdr (car l))))
+
+
 ;; NUMBERS
 
-; Arithmetic
+; Unary ops
+
+(define (flo:1+ x) (flo:+ x 1.0))
+(define (flo:1- x) (flo:- x 1.0))
+
+(define (1+ n)
+  (type-dispatch (cons fix:1+ flo:1+) n))
+
+(define (1- n)
+  (type-dispatch (cons fix:1- flo:1-) n))
+
+(define (apply-to-flonum op x)
+  (if (flonum? x) (op x) x))
+
+(define (round x)
+  (apply-to-flonum flo:round x))
+(define (floor x)
+  (apply-to-flonum flo:floor x))
+(define (ceiling x)
+  (apply-to-flonum flo:ceiling x))
+(define (truncate x)
+  (apply-to-flonum flo:truncate x))
+
+; Type dispatch and promotion
+
+(define (type-dispatch ops x)
+  (if (flonum? x)
+    ((cdr ops) x)
+    ((car ops) x)))
+
+(define (promote-dispatch ops x y)
+  (if (flonum? x)
+    (if (flonum? y)
+      ((cdr ops) x y)
+      ((cdr ops) x (fixnum->flonum y)))
+    (if (flonum? y)
+      ((cdr ops) (fixnum->flonum x) y)
+      ((car ops) x y))))
+
+; Binary operations
+
+(define (pair+ x y) (promote-dispatch (cons fix:+ flo:+) x y))
+(define (pair- x y) (promote-dispatch (cons fix:- flo:-) x y))
+(define (pair* x y) (promote-dispatch (cons fix:* flo:*) x y))
+(define (pair/ x y) (promote-dispatch
+                      (cons (lambda 'args
+                              (error "Division unsupported for integers."))
+                            flo:/) x y))
+
+(define (pair> x y) (promote-dispatch (cons fix:> flo:>) x y))
+(define (pair< x y) (promote-dispatch (cons fix:< flo:<) x y))
+(define (pair>= x y) (promote-dispatch (cons fix:>= flo:>=) x y))
+(define (pair<= x y) (promote-dispatch (cons fix:<= flo:<=) x y))
+(define (pair= x y) (promote-dispatch (cons fix:= flo:=) x y))
+
+(define (neg x)
+  (type-dispatch (cons fix:neg flo:neg) x))
 
 (define (null? arg)
   (eq? arg '()))
@@ -22,15 +91,20 @@
       (fold-left proc (proc (car l) (car (cdr l))) (cdr (cdr l))))))
 
 (define (+ . args)
-  (fold-left fix:+ 0 args))
+  (fold-left pair+ 0 args))
 
 (define (- first . rest)
   (if (null? rest)
-    (fix:neg first)
-    (fix:- first (apply + rest))))
+    (neg first)
+    (pair- first (apply + rest))))
 
 (define (* . args)
-  (fold-left fix:* 1 args))
+  (fold-left pair* 1 args))
+
+(define (/ first . rest)
+  (if (null? rest)
+    (pair/ 1 first)
+    (pair/ first (apply * rest))))
 
 (define (quotient n1 n2)
   (fix:quotient n1 n2))
@@ -39,12 +113,6 @@
   (fix:remainder n1 n2))
 
 (define modulo remainder)
-
-(define (1+ n)
-  (fix:1+ n))
-
-(define (-1+ n)
-  (fix:-1+ n))
 
 ; Relations
 
@@ -58,44 +126,37 @@
         #f))))
 
 (define (= . args)
-  (test-relation fix:= args))
+  (test-relation pair= args))
 
 (define (> . args)
-  (test-relation fix:> args))
+  (test-relation pair> args))
 
 (define (< . args)
-  (test-relation fix:< args))
+  (test-relation pair< args))
 
 (define (>= . args)
-  (test-relation fix:>= args))
+  (test-relation pair>= args))
 
 (define (<= . args)
-  (test-relation fix:<= args))
+  (test-relation pair<= args))
 
+; Numeric tests 
+
+(define (zero? x) (pair= x 0.0))
+(define (positive x) (pair> x 0.0))
+(define (odd? n) (pair= (remainder n 2) 0))
+(define (odd? n) (not (pair= (remainder n 2) 0)))
 
 
 ; Current state of the numerical tower
-(define complex? #f)
-(define real? #f)
-(define rational? #t)
-(define integer? #t)
-(define exact? #t)
-(define inexact? #t)
-
-; Logic
-
-(define (not x) (if x #f #t))
+(define (complex? x) #f)
+(define (real? x) #t)
+(define (rational? x) #t)
+(define (integer? x) (= x (round x)))
+(define (exact? x) (fixnum? x))
+(define (inexact? x) (flonum? x))
 
 ;; LISTS
-
-(define (list . args) args)
-
-
-(define (caar l) (car (car l)))
-(define (cadr l) (car (cdr l)))
-(define (cdar l) (cdr (car l)))
-(define (cddr l) (cdr (cdr l)))
-(define (cadar l) (car (cdr (car l))))
 
 ; Return number of items in list
 (define (length l)
