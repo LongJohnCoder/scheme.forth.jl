@@ -17,7 +17,29 @@
 
 ;; NUMBERS
 
+; Type dispatch and promotion
+
+(define (type-dispatch ops x)
+  (if (flonum? x)
+    ((cdr ops) x)
+    ((car ops) x)))
+
+(define (promote-dispatch ops x y)
+  (if (flonum? x)
+    (if (flonum? y)
+      ((cdr ops) x y)
+      ((cdr ops) x (fixnum->flonum y)))
+    (if (flonum? y)
+      ((cdr ops) (fixnum->flonum x) y)
+      ((car ops) x y))))
+
 ; Unary ops
+
+(define (neg x)
+  (type-dispatch (cons fix:neg flo:neg) x))
+
+(define (abs x)
+  (type-dispatch (cons fix:abs flo:abs) x))
 
 (define (flo:1+ x) (flo:+ x 1.0))
 (define (flo:1- x) (flo:- x 1.0))
@@ -40,22 +62,6 @@
 (define (truncate x)
   (apply-to-flonum flo:truncate x))
 
-; Type dispatch and promotion
-
-(define (type-dispatch ops x)
-  (if (flonum? x)
-    ((cdr ops) x)
-    ((car ops) x)))
-
-(define (promote-dispatch ops x y)
-  (if (flonum? x)
-    (if (flonum? y)
-      ((cdr ops) x y)
-      ((cdr ops) x (fixnum->flonum y)))
-    (if (flonum? y)
-      ((cdr ops) (fixnum->flonum x) y)
-      ((car ops) x y))))
-
 ; Binary operations
 
 (define (fix:/ x y) ; Non-standard definition while we don't have rationals
@@ -73,9 +79,6 @@
 (define (pair>= x y) (promote-dispatch (cons fix:>= flo:>=) x y))
 (define (pair<= x y) (promote-dispatch (cons fix:<= flo:<=) x y))
 (define (pair= x y) (promote-dispatch (cons fix:= flo:=) x y))
-
-(define (neg x)
-  (type-dispatch (cons fix:neg flo:neg) x))
 
 (define (null? arg)
   (eq? arg '()))

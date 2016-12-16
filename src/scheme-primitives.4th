@@ -219,6 +219,11 @@
     swap negate swap
 ; 1 make-fa-primitive fix:neg
 
+:noname ( fixnum -- -fixnum )
+    swap abs swap
+; 1 make-fa-primitive fix:abs
+
+
 ( Find the GCD of n1 and n2 where n2 < n1. )
 : gcd ( n1 n2 -- m )
     
