@@ -21,19 +21,19 @@ END-CODE
 CODE f*
     b = reinterpret(Float64, popPS())
     a = reinterpret(Float64, popPS())
-    pushPS(reinterpret(Int64, a*b))
+    pushPS(reinterpret(Int64, a*b + 0.0))
 END-CODE
 
 CODE f/
     b = reinterpret(Float64, popPS())
     a = reinterpret(Float64, popPS())
-    pushPS(reinterpret(Int64, a/b))
+    pushPS(reinterpret(Int64, a/b + 0.0))
 END-CODE
 
 CODE f^
     b = reinterpret(Float64, popPS())
     a = reinterpret(Float64, popPS())
-    pushPS(reinterpret(Int64, a^b))
+    pushPS(reinterpret(Int64, a^b + 0.0))
 END-CODE
 
 CODE fsqrt
@@ -80,7 +80,7 @@ END-CODE
 CODE fmod
     b = reinterpret(Float64, popPS())
     a = reinterpret(Float64, popPS())
-    pushPS(reinterpret(Int64, a%b))
+    pushPS(reinterpret(Int64, a%b + 0.0))
 END-CODE
 
 CODE flog
@@ -145,6 +145,11 @@ CODE fabs
     pushPS(reinterpret(Int64, abs(a)))
 END-CODE
 
+CODE fround
+    a = reinterpret(Float64, popPS())
+    pushPS(reinterpret(Int64, round(a)))
+END-CODE
+
 : f/mod
     2dup fmod -rot f/ ;
 
@@ -163,15 +168,30 @@ END-CODE
 : flog10
     flog [ 10 i->f flog ] literal f/ ;
 
+: truncate
+    dup 1.0 fmod f- ;
+
 : floor
     dup 0.0 f>= if
-        dup 1.0 fmod f-
+        truncate
     else
         dup 1.0 fmod dup 0.0 <> if
             f- 1.0 f-
         else
             drop
         then
+    then
+;
+
+: ceiling
+    dup 0.0 f>= if
+        dup 1.0 fmod dup 0.0 <> if
+            f- 1.0 f+
+        else
+            drop
+        then
+    else
+        truncate
     then
 ;
 

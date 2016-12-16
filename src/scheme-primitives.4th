@@ -327,6 +327,38 @@
     swap floor swap
 ; 1 make-fa-primitive flo:floor
 
+:noname ( flonum -- flonum )
+    swap ceiling swap
+; 1 make-fa-primitive flo:ceiling
+
+:noname ( flonum -- flonum )
+    swap truncate swap
+; 1 make-fa-primitive flo:truncate
+
+:noname ( flonum -- flonum )
+    swap fround swap
+; 1 make-fa-primitive flo:round
+
+:noname ( flonum -- flonum )
+    drop floor f->i fixnum-type
+; 1 make-fa-primitive flo:floor->exact
+
+:noname ( flonum -- flonum )
+    drop ceiling f->i fixnum-type
+; 1 make-fa-primitive flo:ceiling->exact
+
+:noname ( flonum -- flonum )
+    drop truncate f->i fixnum-type
+; 1 make-fa-primitive flo:truncate->exact
+
+:noname ( flonum -- flonum )
+    drop f->i fixnum-type
+; 1 make-fa-primitive flo:round->exact
+
+:noname ( flonum flonum -- flonum )
+    drop swap drop f/ fatan flonum-type
+; 2 make-fa-primitive flo:atan2
+
 \ }}}
 
 \ ==== Pairs and Lists ==== {{{
