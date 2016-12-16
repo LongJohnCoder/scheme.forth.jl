@@ -58,13 +58,15 @@
 
 ; Binary operations
 
+(define (fix:/ x y) ; Non-standard definition while we don't have rationals
+  (if (fix:= 0 (fix:remainder x y))
+    (fix:quotient x y)
+    (flo:/ (fixnum->flonum x) (fixnum->flonum y))))
+
 (define (pair+ x y) (promote-dispatch (cons fix:+ flo:+) x y))
 (define (pair- x y) (promote-dispatch (cons fix:- flo:-) x y))
 (define (pair* x y) (promote-dispatch (cons fix:* flo:*) x y))
-(define (pair/ x y) (promote-dispatch
-                      (cons (lambda 'args
-                              (error "Division unsupported for integers."))
-                            flo:/) x y))
+(define (pair/ x y) (promote-dispatch (cons fix:/ flo:/) x y))
 
 (define (pair> x y) (promote-dispatch (cons fix:> flo:>) x y))
 (define (pair< x y) (promote-dispatch (cons fix:< flo:<) x y))
