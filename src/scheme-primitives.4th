@@ -223,11 +223,26 @@
     swap abs swap
 ; 1 make-fa-primitive fix:abs
 
+: sort-pair
+    2dup > if
+        swap
+    then
+;
 
 ( Find the GCD of n1 and n2 where n2 < n1. )
 : gcd ( n1 n2 -- m )
-    
+    sort-pair
+    over 0= if
+        swap drop
+    else
+        over mod
+        recurse
+    then
 ;
+
+:noname ( fixnum fixnum -- fixnum' )
+    drop swap drop gcd fixnum-type
+; 2 make-fa-primitive fix:gcd
 
 \ --- Flonums ---
 
