@@ -17,6 +17,41 @@
 
 ;; NUMBERS
 
+; Rational primitives
+
+(define (numerator x)
+  (if (ratnum? x)
+    (rat:numerator x)
+    x))
+
+(define (denominator x)
+  (if (ratnum? x)
+    (rat:denominator x)
+    (if (fixnum? x)
+      1
+      1.0)))
+
+(define (rat:+ x y)
+  (make-rational (fix:+ (fix:* (numerator x) (denominator y))
+                        (fix:* (denominator x) (numerator y)))
+                 (fix:* (denominator x) (denominator y))))
+
+(define (rat:- x y)
+  (make-rational (fix:- (fix:* (numerator x) (denominator y))
+                        (fix:* (denominator x) (numerator y)))
+                 (fix:* (denominator x) (denominator y))))
+
+(define (rat:* x y)
+  (make-rational (fix:* (numerator x) (numerator y))
+                 (fix:* (denominator x) (denominator y))))
+
+(define (rat:/ x y)
+  (make-rational (fix:* (numerator x) (denominator y))
+                 (fix:* (denominator x) (numerator y))))
+
+(define (rat:1/ x)
+  (make-rational (denominator x) (numerator x)))
+
 ; Type dispatch and promotion
 
 (define (type-dispatch ops x)

@@ -4,6 +4,7 @@ scheme definitions
 include term-colours.4th
 include defer-is.4th
 include catch-throw.4th
+include integer.4th
 include float.4th
 
 include debugging.4th
@@ -25,6 +26,7 @@ variable nexttype
 
 make-type fixnum-type
 make-type flonum-type
+make-type ratnum-type
 make-type boolean-type
 make-type character-type
 make-type string-type
@@ -786,6 +788,42 @@ parse-idx-stack parse-idx-sp !
     pop-parse-idx
 ;
 
+: ratnum? ( -- bool )
+    push-parse-idx
+
+    minus? plus? or if
+        inc-parse-idx
+    then
+
+    digit? invert if
+        pop-parse-idx false exit
+    else
+        inc-parse-idx
+    then
+
+    begin digit? while
+        inc-parse-idx
+    repeat
+
+    [char] / nextchar <> if
+        pop-parse-idx false exit
+    else
+        inc-parse-idx
+    then
+
+    digit? invert if
+        pop-parse-idx false exit
+    else
+        inc-parse-idx
+    then
+
+    begin digit? while
+        inc-parse-idx
+    repeat
+
+    delim? pop-parse-idx
+;
+
 : boolean? ( -- bool )
     nextchar [char] # <> if false exit then
 
@@ -904,6 +942,23 @@ parse-idx-stack parse-idx-sp !
     then
 
     flonum-type
+;
+
+: make-rational ( fixnum fixnum -- ratnum|fixnum )
+    drop swap drop
+    simplify
+
+    dup 1 = if
+        drop fixnum-type
+    else
+        fixnum-type swap fixnum-type
+        cons drop ratnum-type
+    then
+;
+
+: readratnum ( -- ratnum )
+    readfixnum inc-parse-idx readfixnum
+    make-rational
 ;
 
 : readbool ( -- bool-obj )
@@ -1032,6 +1087,11 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
+    ratnum? if
+        readratnum
+        exit
+    then
+
     boolean? if
         readbool
         exit
@@ -1122,6 +1182,7 @@ parse-idx-stack parse-idx-sp !
     boolean-type istype? if true exit then
     fixnum-type istype? if true exit then
     flonum-type istype? if true exit then
+    ratnum-type istype? if true exit then
     character-type istype? if true exit then
     string-type istype? if true exit then
     nil-type istype? if true exit then
@@ -1615,6 +1676,11 @@ hide env
 
 : printflonum ( flonum -- ) drop f. ;
 
+: printratnum ( ratnum -- )
+    drop pair-type 2dup
+    car print ." /" cdr print
+;
+
 : printbool ( bool -- )
     drop if
         ." #t"
@@ -1686,6 +1752,7 @@ hide env
 :noname ( obj -- )
     fixnum-type istype? if printfixnum exit then
     flonum-type istype? if printflonum exit then
+    ratnum-type istype? if printratnum exit then
     boolean-type istype? if printbool exit then
     character-type istype? if printchar exit then
     string-type istype? if printstring exit then

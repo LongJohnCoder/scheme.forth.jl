@@ -21,6 +21,10 @@
 ; 1 make-fa-primitive flonum?
 
 :noname ( args -- boolobj )
+    ratnum-type istype? -rot 2drop boolean-type
+; 1 make-fa-primitive ratnum?
+
+:noname ( args -- boolobj )
     character-type istype? -rot 2drop boolean-type
 ; 1 make-fa-primitive char?
 
@@ -223,23 +227,6 @@
     swap abs swap
 ; 1 make-fa-primitive fix:abs
 
-: sort-pair
-    2dup > if
-        swap
-    then
-;
-
-( Find the GCD of n1 and n2 where n2 < n1. )
-: gcd ( n1 n2 -- m )
-    sort-pair
-    over 0= if
-        swap drop
-    else
-        over mod
-        recurse
-    then
-;
-
 :noname ( fixnum fixnum -- fixnum' )
     drop swap drop gcd fixnum-type
 ; 2 make-fa-primitive fix:gcd
@@ -383,6 +370,17 @@
     drop swap drop f/ fatan flonum-type
 ; 2 make-fa-primitive flo:atan2
 
+\ --- Rationals ---
+
+' make-rational 2 make-fa-primitive make-rational
+
+:noname ( ratnum -- fixnum )
+    drop pair-type car
+; 1 make-fa-primitive rat:numerator
+
+:noname ( ratnum -- fixnum )
+    drop pair-type cdr
+; 1 make-fa-primitive rat:denominator
 
 \ --- Conversion ---
 
