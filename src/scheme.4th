@@ -306,6 +306,9 @@ create-symbol lambda            lambda-symbol
 create-symbol λ                 λ-symbol
 create-symbol begin             begin-symbol
 
+\ Symbol to be bound to welcome message procedure by library
+create-symbol welcome           welcome-symbol
+
 \ }}}
 
 \ ---- Environments ---- {{{
@@ -989,35 +992,51 @@ parse-idx-stack parse-idx-sp !
 ;
 
 : readstring ( -- charlist )
-    nextchar [char] " = if
-        inc-parse-idx
 
-        delim? false = if
-            bold fg red
-            ." No delimiter following right double quote. Aborting." cr
-            reset-term abort
+    nil nil
+
+    begin
+        nextchar [char] " <>
+    while
+        nextchar [char] \ = if
+            inc-parse-idx
+            nextchar case
+                [char] n of '\n' endof
+                [char] " of [char] " endof
+                [char] \
+            endcase
+        else
+            nextchar
         then
+        inc-parse-idx character-type
+        nil cons
 
-        dec-parse-idx
+        ( firstchar prevchar thischar )
 
-        0 nil-type exit
+        2swap nil? if
+            2drop 2swap 2drop 2dup  ( thischar thischar )
+        else
+            ( firstchar thischar prevchar )
+            2over 2swap  set-cdr! ( firstchar thischar )
+        then
+    repeat
+
+    \ Discard previous character
+    2drop
+
+    inc-parse-idx
+    delim? false = if
+        bold fg red
+        ." No delimiter following right double quote. Aborting." cr
+        reset-term abort
     then
 
-    nextchar [char] \ = if
-        inc-parse-idx
-        nextchar case
-            [char] n of '\n' endof
-            [char] " of [char] " endof
-            [char] \
-        endcase
-    else
-        nextchar
+    dec-parse-idx
+
+    nil? if
+        nil cons
     then
-    inc-parse-idx character-type
-
-    recurse
-
-    cons
+    drop string-type
 ;
 
 : readsymbol ( -- charlist )
@@ -1106,7 +1125,6 @@ parse-idx-stack parse-idx-sp !
         inc-parse-idx
 
         readstring
-        drop string-type
 
         nextchar [char] " <> if
             bold red ." Missing closing double-quote." reset-term cr
@@ -1945,12 +1963,13 @@ variable gc-stack-depth
 ;
 
 : repl
-    cr ." Welcome to scheme.forth.jl!" cr
-       ." Use Ctrl-D to exit." cr
 
     empty-parse-str
 
     enable-gc
+
+    \ Display welcome message
+    welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
