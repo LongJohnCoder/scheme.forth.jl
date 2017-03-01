@@ -36,7 +36,7 @@ make-type pair-type
 make-type symbol-type
 make-type primitive-proc-type
 make-type compound-proc-type
-make-type fileport-type
+make-type port-type
 : istype? ( obj type -- obj bool )
     over = ;
 
@@ -181,7 +181,7 @@ variable nextfree
     drop ;
 
 : fid>fileport ( fid -- fileport )
-    fileport-type ;
+    port-type ;
 
 : open-input-file ( addr n -- fileport )
     r/o open-file drop fid>fileport
@@ -192,7 +192,7 @@ variable nextfree
 ;
 
 objvar console-i/o-port
-0 fileport-type console-i/o-port obj!
+0 port-type console-i/o-port obj!
 
 objvar current-input-port
 console-i/o-port obj@ current-input-port obj!
@@ -1780,6 +1780,7 @@ hide env
     primitive-proc-type istype? if printprim exit then
     compound-proc-type istype? if printcomp exit then
     none-type istype? if printnone exit then
+    port-type istype? if printport exit then
 
     recoverable-exception throw" Tried to print object with unknown type."
 ; is print
@@ -1891,24 +1892,6 @@ variable gc-stack-depth
 \ }}}
 
 \ ---- Loading files ---- {{{
-
-: charlist>cstr ( charlist addr -- n )
-
-    dup 2swap ( origaddr addr charlist )
-
-    begin 
-        nil? false =
-    while
-        2dup cdr 2swap car 
-        drop ( origaddr addr charlist char )
-        -rot 2swap ( origaddr charlist addr char )
-        over !
-        1+ -rot ( origaddr nextaddr charlist )
-    repeat
-
-    2drop ( origaddr finaladdr ) 
-    swap -
-;
 
 : load ( addr n -- finalResult )
     open-input-file

@@ -203,7 +203,7 @@
   (define (iter a count)
     (if (null? a)
       count
-      (iter (cdr a) (+ count 1))))
+      (iter (cdr a) (fix:+ count 1))))
   (iter l 0))
 
 ; Join two lists together
@@ -330,18 +330,18 @@
 (define (sum n)
 
   (define (sum-iter total count maxcount)
-    (if (> count maxcount)
+    (if (fix:> count maxcount)
       total
-      (sum-iter (+ total count) (+ count 1) maxcount)))
+      (sum-iter (fix:+ total count) (fix:+ count 1) maxcount)))
   
   (sum-iter 0 1 n))
 
 ; Recursive summation. Use this to compare with tail call
 ; optimized iterative algorithm.
 (define (sum-recurse n)
-  (if (= n 0)
+  (if (fix:= n 0)
     0
-    (+ n (sum-recurse (- n 1)))))
+    (fix:+ n (sum-recurse (fix:- n 1)))))
 
 ;; MISC
 

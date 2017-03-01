@@ -153,6 +153,37 @@
     charlist>symbol
 ; make-primitive string->symbol
 
+:noname ( charlist -- string )
+    2dup 1 ensure-arg-count
+
+    car nil? if
+        2drop
+        nil nil cons
+        drop string-type
+        exit
+    then
+    
+    pair-type ensure-arg-type
+
+    duplicate-charlist
+    drop string-type
+; make-primitive list->string
+
+:noname ( string -- charlist )
+    2dup 1 ensure-arg-count
+    car string-type ensure-arg-type
+
+    drop pair-type
+
+    2dup car nil? if
+        2swap 2drop
+    else
+        2drop
+        duplicate-charlist
+    then
+
+; make-primitive string->list
+
 \ }}}
 
 \ ==== Numeric types ==== {{{
@@ -431,6 +462,32 @@
 \ }}}
 
 \ ==== Input/Output ==== {{{
+
+:noname ( -- port )
+    console-i/o-port obj@
+; 0 make-fa-primitive console-i/o-port
+
+:noname ( -- port )
+    current-input-port obj@
+; 0 make-fa-primitive current-input-port
+
+: charlist>cstr ( charlist addr -- n )
+
+    dup 2swap ( origaddr addr charlist )
+
+    begin 
+        nil? false =
+    while
+        2dup cdr 2swap car 
+        drop ( origaddr addr charlist char )
+        -rot 2swap ( origaddr charlist addr char )
+        over !
+        1+ -rot ( origaddr nextaddr charlist )
+    repeat
+
+    2drop ( origaddr finaladdr ) 
+    swap -
+;
 
 :noname ( args -- finalResult )
     drop pair-type
