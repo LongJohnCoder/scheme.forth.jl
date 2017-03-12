@@ -46,6 +46,10 @@
     -rot 2drop boolean-type
 ; 1 make-fa-primitive procedure?
 
+:noname ( args -- boolobj )
+    port-type istype? -rot 2drop boolean-type
+; 1 make-fa-primitive port?
+
 \ }}}
 
 \ ==== Type conversions ==== {{{
@@ -470,6 +474,36 @@
 :noname ( -- port )
     current-input-port obj@
 ; 0 make-fa-primitive current-input-port
+
+:noname ( args -- charobj )
+    nil? if
+        2drop current-input-port obj@
+    else
+        car port-type ensure-arg-type
+    then
+
+    read-char
+; make-primitive read-char
+
+:noname ( args -- charobj )
+    nil? if
+        2drop current-input-port obj@
+    else
+        car port-type ensure-arg-type
+    then
+
+    peek-char
+; make-primitive peek-char
+
+:noname ( args -- stringobj )
+    nil? if
+        2drop current-input-port obj@
+    else
+        car port-type ensure-arg-type
+    then
+
+    read-line
+; make-primitive read-line
 
 : charlist>cstr ( charlist addr -- n )
 

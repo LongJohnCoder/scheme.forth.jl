@@ -175,37 +175,6 @@ variable nextfree
 
 \ }}}
 
-\ ---- Port I/O ----  {{{
-
-: fileport>fid ( fileport -- fid )
-    drop ;
-
-: fid>fileport ( fid -- fileport )
-    port-type ;
-
-: open-input-file ( addr n -- fileport )
-    r/o open-file drop fid>fileport
-;
-
-: close-port ( fileport -- )
-    fileport>fid close-file drop
-;
-
-objvar console-i/o-port
-0 port-type console-i/o-port obj!
-
-objvar current-input-port
-console-i/o-port obj@ current-input-port obj!
-
-: read-port ( fileport -- obj )
-    current-input-port obj!
-    read ;
-
-: read-console ( -- obj )
-    console-i/o-port obj@ read-port ;
-
-\ }}}
-
 \ ---- Pre-defined symbols ---- {{{
 
 objvar symbol-table
@@ -305,9 +274,125 @@ create-symbol if                if-symbol
 create-symbol lambda            lambda-symbol
 create-symbol λ                 λ-symbol
 create-symbol begin             begin-symbol
+create-symbol eof               eof-symbol
 
 \ Symbol to be bound to welcome message procedure by library
 create-symbol welcome           welcome-symbol
+
+\ }}}
+
+\ ---- Port I/O ----  {{{
+
+( Ports are pairs with the fid in the car and the peek buffer in the cdr. )
+
+: fileport>fid ( fileport -- fid )
+    drop pair-type car drop ;
+
+: get-last-peek ( fileport -- char/nil )
+    drop pair-type cdr ;
+
+: set-last-peek ( char/nil fileport -- )
+    drop pair-type set-cdr!
+;
+
+: fid>fileport ( fid -- fileport )
+    fixnum-type nil cons drop port-type ;
+
+: open-input-file ( addr n -- fileport )
+    r/o open-file drop fid>fileport
+;
+
+: close-port ( fileport -- )
+    fileport>fid close-file drop
+;
+
+objvar console-i/o-port
+0 fixnum-type nil cons drop port-type console-i/o-port obj!
+
+objvar current-input-port
+console-i/o-port obj@ current-input-port obj!
+
+: read-char ( port -- char ) 
+    2dup get-last-peek nil? if
+        2drop
+        2dup console-i/o-port obj@ objeq? if
+            2drop
+            key character-type
+        else
+            fileport>fid pad 1 rot read-file 0= if
+                eof-symbol
+            else
+                pad @ character-type
+            then
+        then
+    else
+        nil 2rot set-cdr!
+    then
+;
+
+: peek-char ( port -- char )
+    2dup get-last-peek nil? if
+        2drop 2dup read-char
+        2dup 2rot set-last-peek
+    else
+        2swap 2drop
+    then
+;
+
+variable read-line-buffer-span
+variable read-line-buffer-offset
+
+( Hack to save original read-line while we transition to new one. )
+: orig-read-line immediate
+    ['] read-line , ;
+
+: read-line ( port -- string )
+
+    2dup get-last-peek
+    nil? if
+        2drop
+        0 read-line-buffer-offset !
+    else
+        2over nil 2swap set-last-peek
+        2dup drop '\n' = if
+            2drop nil nil cons exit
+        else
+            drop pad !
+            1 read-line-buffer-offset !
+        then
+    then
+
+    2dup console-i/o-port obj@ objeq? if
+        2drop
+        pad read-line-buffer-offset @ + 200 expect cr
+        span @ read-line-buffer-offset @ + read-line-buffer-span !
+    else
+        pad read-line-buffer-offset @ + 200 2over fileport>fid orig-read-line
+        drop swap read-line-buffer-offset @ + read-line-buffer-span !
+    then
+
+    nil
+    
+    begin
+        read-line-buffer-span @ 0>
+    while
+        pad read-line-buffer-span @ 1- + @ character-type 2swap cons
+        -1 read-line-buffer-span +!
+    repeat
+
+    nil? if
+        nil cons drop string-type
+    else
+        drop string-type
+    then
+;
+
+: read-port ( fileport -- obj )
+    current-input-port obj!
+    read ;
+
+: read-console ( -- obj )
+    console-i/o-port obj@ read-port ;
 
 \ }}}
 
@@ -648,7 +733,7 @@ parse-idx-stack parse-idx-sp !
         parse-str 160 expect cr
         span @ parse-str-span !
     else
-        parse-str 160 current-input-port obj@ fileport>fid read-line
+        parse-str 160 current-input-port obj@ fileport>fid orig-read-line
         drop swap parse-str-span !
 
         parse-str-span @ 0= and if append-eof then
@@ -1875,6 +1960,7 @@ variable gc-stack-depth
 
     symbol-table obj@ gc-mark-obj
     macro-table obj@ gc-mark-obj
+    console-i/o-port obj@ gc-mark-obj
     global-env obj@ gc-mark-obj
 
     depth gc-stack-depth @ do
