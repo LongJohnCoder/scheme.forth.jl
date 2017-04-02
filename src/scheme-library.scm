@@ -13,7 +13,27 @@
 (define (cdar l) (cdr (car l)))
 (define (cddr l) (cdr (cdr l)))
 (define (cadar l) (car (cdr (car l))))
+(define (caddr l) (car (cdr (cdr l))))
+(define (cadddr l) (car (cdr (cdr (cdr l)))))
 
+;; FUNCTIONAL PROGRAMMING
+
+(define (fold-left proc init l)
+  (if (null? l)
+    init
+    (fold-left proc (proc init (car l)) (cdr l))))
+
+(define (reduce-left proc init l)
+  (if (null? l)
+    init
+    (if (null? (cdr l))
+      (car l)
+      (fold-left proc (proc (car l) (car (cdr l))) (cdr (cdr l))))))
+
+(define (map proc l)
+  (if (null? l)
+    '()
+    (cons (proc (car l)) (map proc (cdr l)))))
 
 ;; NUMBERS
 
@@ -117,18 +137,6 @@
 
 (define (null? arg)
   (eq? arg '()))
-
-(define (fold-left proc init l)
-  (if (null? l)
-    init
-    (fold-left proc (proc init (car l)) (cdr l))))
-
-(define (reduce-left proc init l)
-  (if (null? l)
-    init
-    (if (null? (cdr l))
-      (car l)
-      (fold-left proc (proc (car l) (car (cdr l))) (cdr (cdr l))))))
 
 (define (+ . args)
   (fold-left pair+ 0 args))
