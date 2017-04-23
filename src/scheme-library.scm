@@ -271,6 +271,7 @@
   (eq? (cond-predicate clause) 'else))
 
 (define (expand-clauses clauses)
+  (display "Expanding cond clauses...")
   (if (null? clauses)
     (none)
     (let ((first (car clauses))

@@ -3,6 +3,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define apply-in-underlying-scheme apply)
+(define true #t)
+(define false #f)
 
 ;; Verbatim code from SICP
 
@@ -237,6 +239,7 @@
 (define (frame-variables frame) (car frame))
 (define (frame-values frame) (cdr frame))
 (define (add-binding-to-frame! var val frame)
+  (display "Adding binding to frame... ")
   (set-car! frame (cons var (car frame)))
   (set-cdr! frame (cons val (cdr frame))))
 
@@ -294,15 +297,22 @@
 (display "define-variable\n")
 
 (define (define-variable! var val env)
+  (display "Defining a variable...\n")
   (let ((frame (first-frame env)))
     (define (scan vars vals)
+      (display "Scanning for ") (display var) (display " in ") (display vars) (display "...\n")
       (cond ((null? vars)
+             (begin (display "adding binding\n")
              (add-binding-to-frame! 
-               var val frame))
+               var val frame)))
             ((eq? var (car vars))
-             (set-car! vals val))
-            (else (scan (cdr vars) 
-                        (cdr vals)))))
+             (begin (display "replacing binding\n")
+             (set-car! vals val)))
+            (else
+              (begin
+                (display "iterating\n")
+                (scan (cdr vars) 
+                        (cdr vals))))))
     (scan (frame-variables frame)
           (frame-values frame))))
 
@@ -314,6 +324,7 @@
             (primitive-procedure-names)
             (primitive-procedure-objects)
             the-empty-environment)))
+    (display "Setting up the environment..\n")
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
     initial-env))
@@ -352,7 +363,6 @@
 
 
 (display "driver-loop...\n") 
-
 
 (define (driver-loop)
   (prompt-for-input input-prompt)
