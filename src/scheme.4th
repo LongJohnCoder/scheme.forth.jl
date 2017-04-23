@@ -1894,6 +1894,7 @@ variable gc-stack-depth
     string-type istype? if true exit then
     symbol-type istype? if true exit then
     compound-proc-type istype? if true exit then
+    port-type istype? if true exit then
 
     false
 ;
