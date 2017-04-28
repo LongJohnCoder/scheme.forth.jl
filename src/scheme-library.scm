@@ -239,19 +239,9 @@
 
 ; let
 
-(define (let-vars args)
-  (if (null? args)
-    '()
-    (cons (caar args) (let-vars (cdr args)))))
-
-(define (let-inits args)
-  (if (null? args)
-    '()
-  (cons (cadar args) (let-inits (cdr args)))))
-
 (define-macro (let args . body)
-              `((lambda ,(let-vars args)
-                 ,@body) ,@(let-inits args)))
+              `((lambda ,(map (lambda (x) (car x)) args)
+                 ,@body) ,@(map (lambda (x) (cadr x)) args)))
 
 ; while
 
