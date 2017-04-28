@@ -390,5 +390,4 @@
             '<procedure-env>))
     (display object)))
 
-(define the-global-environment 
-  (setup-environment))
+;; (define the-global-environment (setup-environment))

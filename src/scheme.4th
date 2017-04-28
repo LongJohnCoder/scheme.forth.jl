@@ -77,7 +77,7 @@ make-exception unrecoverable-exception
 
 \ ---- List-structured memory ---- {{{
 
-10000 constant scheme-memsize
+20000 constant scheme-memsize
 
 create car-cells scheme-memsize allot
 create car-type-cells scheme-memsize allot
@@ -644,6 +644,12 @@ objvar macro-table
 ( Look up macro in macro table. Returns nil if
   no macro is found. )
 : lookup-macro ( name_symbol -- proc )
+
+    symbol-type istype? invert if
+        \ Early exit if argument is not a symbol
+        2drop nil exit
+    then
+    
     macro-table obj@
 
     begin
@@ -1673,6 +1679,13 @@ hide env
 :noname ( obj env -- result )
     2swap
 
+    \ --- DEBUG ---
+    ( 
+      fg yellow ." Evaluating: " bold 2dup print reset-term
+      space fg green ." PS: " bold depth . reset-term
+      space fg blue  ." RS: " bold RSP@ RSP0 - . reset-term cr
+    )
+
     self-evaluating? if
         2swap 2drop
         exit
@@ -2033,7 +2046,6 @@ variable gc-stack-depth
 ;
 
 : repl
-
     empty-parse-str
 
     enable-gc
