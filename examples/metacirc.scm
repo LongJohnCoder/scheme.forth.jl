@@ -329,6 +329,7 @@
     (define-variable! 'false false initial-env)
     initial-env))
 
+
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
 
@@ -351,8 +352,6 @@
   (map (lambda (proc) 
          (list 'primitive (cadr proc)))
        primitive-procedures))
-
-
 
 (define (apply-primitive-procedure proc args)
     (apply-in-underlying-scheme
@@ -390,4 +389,6 @@
             '<procedure-env>))
     (display object)))
 
-;; (define the-global-environment (setup-environment))
+
+(define the-global-environment (setup-environment))
+

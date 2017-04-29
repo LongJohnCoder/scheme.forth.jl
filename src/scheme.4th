@@ -1968,7 +1968,7 @@ variable gc-stack-depth
 ;
 
 :noname
-    ." GC! "
+    \ ." GC! "
 
     gc-unmark
 

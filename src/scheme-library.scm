@@ -12,8 +12,14 @@
 (define (cadr l) (car (cdr l)))
 (define (cdar l) (cdr (car l)))
 (define (cddr l) (cdr (cdr l)))
+(define (caaar l) (car (car (car l))))
+(define (caadr l) (car (car (cdr l))))
 (define (cadar l) (car (cdr (car l))))
 (define (caddr l) (car (cdr (cdr l))))
+(define (cdaar l) (cdr (car (car l))))
+(define (cdadr l) (cdr (car (cdr l))))
+(define (cddar l) (cdr (cdr (car l))))
+(define (cdddr l) (cdr (cdr (cdr l))))
 (define (cadddr l) (car (cdr (cdr (cdr l)))))
 
 ;; FUNCTIONAL PROGRAMMING
@@ -203,6 +209,10 @@
 (define (integer? x) (= x (round x)))
 (define (exact? x) (fixnum? x))
 (define (inexact? x) (flonum? x))
+(define (number? x)
+  (if (fixnum? x) #t
+    (if (flonum? x) #t
+      (if (ratnum? x) #t #f))))
 
 ;; LISTS
 
@@ -255,61 +265,66 @@
 
 ; cond
 
-(define (cond-predicate clause) (car clause))
-(define (cond-actions clause) (cdr clause))
-(define (cond-else-clause? clause)
-  (eq? (cond-predicate clause) 'else))
+((lambda ()
+   (define (cond-predicate clause) (car clause))
+   (define (cond-actions clause) (cdr clause))
+   (define (cond-else-clause? clause)
+     (eq? (cond-predicate clause) 'else))
 
-(define (expand-clauses clauses)
-  (display "Expanding cond clauses...")
-  (if (null? clauses)
-    (none)
-    (let ((first (car clauses))
-          (rest (cdr clauses)))
-      (if (cond-else-clause? first)
-        (if (null? rest)
-          `(begin ,@(cond-actions first))
-          (error "else clause isn't last in cond expression."))
-        `(if ,(cond-predicate first)
-           (begin ,@(cond-actions first))
-           ,(expand-clauses rest))))))
+   (define (expand-clauses clauses)
+     (if (null? clauses)
+       (none)
+       (let ((first (car clauses))
+             (rest (cdr clauses)))
+         (if (cond-else-clause? first)
+           (if (null? rest)
+             `(begin ,@(cond-actions first))
+             (error "else clause isn't last in cond expression."))
+           `(if ,(cond-predicate first)
+              (begin ,@(cond-actions first))
+              ,(expand-clauses rest))))))
 
-(define-macro (cond . clauses)
-              (if (null? clauses)
-                (error "cond requires at least one clause.")
-                (expand-clauses clauses)))
+   (define-macro (cond . clauses)
+                 (if (null? clauses)
+                   (error "cond requires at least one clause.")
+                   (expand-clauses clauses)))
+   ))
 
 ; and
 
-(define (expand-and-expressions expressions)
-  (let ((first (car expressions))
-        (rest (cdr expressions)))
-    (if (null? rest)
-      first
-      `(if ,first
-         ,(expand-and-expressions rest)
-         #f))))
+((lambda ()
+   (define (expand-and-expressions expressions)
+     (let ((first (car expressions))
+           (rest (cdr expressions)))
+       (if (null? rest)
+         first
+         `(if ,first
+            ,(expand-and-expressions rest)
+            #f))))
 
-(define-macro (and . expressions)
-              (if (null? expressions)
-                #t
-                (expand-and-expressions expressions)))
+   (define-macro (and . expressions)
+                 (if (null? expressions)
+                   #t
+                   (expand-and-expressions expressions)))
+   ))
 
 ; or
 
-(define (expand-or-expressions expressions)
-  (if (null? expressions)
-    #f
-    (let ((first (car expressions))
-          (rest (cdr expressions))
-          (val (gensym)))
-      `(let ((,val ,first))
-         (if ,val
-            ,val
-            ,(expand-or-expressions rest))))))
+((lambda ()
+   (define (expand-or-expressions expressions)
+     (if (null? expressions)
+       #f
+       (let ((first (car expressions))
+             (rest (cdr expressions))
+             (val (gensym)))
+         `(let ((,val ,first))
+            (if ,val
+              ,val
+              ,(expand-or-expressions rest))))))
 
-(define-macro (or . expressions)
-              (expand-or-expressions expressions))
+   (define-macro (or . expressions)
+                 (expand-or-expressions expressions))
+   ))
 
 
 ;; TESTING
