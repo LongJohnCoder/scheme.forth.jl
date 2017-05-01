@@ -2,6 +2,8 @@
 ;; Mandatory SICP Metacircular Evaluator ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; To use, simply (load "metacirc.scm") and run the (driver-loop) command.
+
 (define apply-in-underlying-scheme apply)
 (define true #t)
 (define false #f)
@@ -367,5 +369,3 @@
 
 
 (define the-global-environment (setup-environment))
-
-(driver-loop)

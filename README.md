@@ -53,6 +53,51 @@ At this point you can start entering Scheme commands.  For example,
     > (factorial 5)
     ; 120
 
+Metacircular Evaluator
+======================
+
+Of course, one of the things you can do in Scheme (or of course any programming
+language, this is the fundamental thing) is implement an interpreter for
+another programming language.  The examples directory in this repository
+contains a verbatim copy of the source for the "metacircular" scheme interpreter
+from SICP. To load it, use the following command:
+
+    > (load "../examples/metacirc.scm")
+    ; ok
+
+Be prepared to wait a couple of minutes. When the interpreter finally loads, enter
+the following command to run it:
+
+    > (driver-loop)
+
+You'll then be greeted by the following prompt:
+
+    ;; M-Eval input:
+
+At this point you can start entering Scheme commands... but be prepared to wait
+a _long_ time for the result.  For instance, the following example from SICP
+defines and demonstrates a recursive list append procedure:
+
+    (define (append x y)
+       (if (null? x)
+           y
+           (cons (car x)
+                 (append (cdr x) y))))
+
+     ;;; M-Eval value:
+     ok
+
+     ;;; M-Eval input:
+     (append '(a b c) '(d e f))
+
+     ;;; M-Eval value:
+     (a b c d e f)
+
+Be prepared to wait 20 min or more for the final result to be printed.  (Given
+that at this point we have a program running in a Scheme interpreter running
+inside another Scheme interpreter which is itself running on a Forth system
+that is implemented in Julia, this should not be a surprise.)
+
 License
 =======
 
