@@ -88,6 +88,13 @@
     env)
   'ok)
 
+(define (eval-definition exp env)
+  (define-variable! 
+    (definition-variable exp)
+    (eval (definition-value exp) env)
+    env)
+  'ok)
+
 (define (self-evaluating? exp)
   (cond ((number? exp) true)
         ((string? exp) true)
