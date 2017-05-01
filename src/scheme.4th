@@ -51,27 +51,15 @@ variable nextexception
     1 nextexception +!
     does> @ ;
 
+: except-message:
+    bold fg red
+    ." Exception: "
+;
+
 make-exception recoverable-exception
 make-exception unrecoverable-exception
 
-: display-exception-msg ( addr count -- )
-    bold fg red
-    ." Exception: "
-    type
-    reset-term ;
-
-: throw" immediate 
-    [compile] s"
-
-    ['] rot , ['] dup ,
-
-    [compile] if
-        ['] -rot ,
-        ['] display-exception-msg ,
-    [compile] then
-
-    ['] throw ,
-;
+: throw reset-term throw ;
 
 \ }}}
 
@@ -103,7 +91,7 @@ variable nextfree
     then
 
     nextfree @ scheme-memsize >= if
-        unrecoverable-exception throw s" Out of memory!"
+        except-message: ." Out of memory!" unrecoverable-exception throw
     then
 ;
 
@@ -471,23 +459,29 @@ objvar vals
 hide vars
 hide vals
 
+objvar var
+
 : lookup-var ( var env -- val )
+    2over var obj!
     get-vars-vals if
         2swap 2drop car
     else
-        recoverable-exception throw" Tried to read unbound variable."
+        except-message: ." tried to read unbound variable '" var obj@ print ." '." recoverable-exception  throw
     then
 ;
 
 : set-var ( var val env -- )
     >R >R 2swap R> R> ( val var env )
+    2over var obj!
     get-vars-vals if
         2swap 2drop ( val vals )
         set-car!
     else
-        recoverable-exception throw" Tried to set unbound variable."
+        except-message: ." tried to set unbound variable '" var obj@ print ." '." recoverable-exception throw
     then
 ;
+
+hide var
 
 objvar env
 
@@ -536,11 +530,11 @@ global-env obj!
 : ensure-arg-count ( args n -- )
     dup 0= if
         drop nil objeq? false = if
-            recoverable-exception throw" Too many arguments for primitive procedure."
+            except-message: ." Too many arguments for primitive procedure." recoverable-exception throw
         then
     else
         -rot nil? if
-            recoverable-exception throw" Too few arguments for primitive procedure."
+            except-message: ." Too few arguments for primitive procedure." recoverable-exception  throw
         then
         
         cdr rot 1- recurse
@@ -550,17 +544,17 @@ global-env obj!
 : ensure-arg-type-and-count ( tn tn-1 ... t2 t1 args n -- )
     dup 0= if
         drop nil objeq? false = if
-            recoverable-exception throw" Too many arguments for primitive procedure."
+            except-message: ." Too many arguments for primitive procedure." recoverable-exception throw
         then
     else
         -rot nil? if
-            recoverable-exception throw" Too few arguments for primitive procedure."
+            except-message: ." Too few arguments for primitive procedure." recoverable-exception throw
         then
 
         2dup cdr 2swap car ( ... t1 n args' arg1 )
         2rot 1- swap 2swap rot ( ... args' n-1 arg1 t1 )
         istype? false = if
-            recoverable-exception throw" Incorrect type for primitive procedure."
+            except-message: ." Incorrect type for primitive procedure." recoverable-exception throw
         then
 
         2drop recurse
@@ -630,7 +624,7 @@ global-env obj!
 
 : ensure-arg-type ( arg type -- arg )
     istype? false = if
-        recoverable-exception throw" Incorrect argument type for primitive procedure."
+        except-message: ." Incorrect argument type for primitive procedure." recoverable-exception throw
     then
 ;
 
@@ -1327,12 +1321,12 @@ parse-idx-stack parse-idx-sp !
     cdr ( env args )
 
     nil? if
-        recoverable-exception throw" no arguments to unquote."
+        except-message: ." no arguments to unquote." recoverable-exception throw
     then
 
     2dup cdr
     nil? false = if
-        recoverable-exception throw" too many arguments to unquote."
+        except-message: ." too many arguments to unquote." recoverable-exception throw
     then
 
     2drop car 2swap eval
@@ -1390,12 +1384,12 @@ defer eval-quasiquote-item
     2swap cdr ( env args )
 
     nil? if
-        recoverable-exception throw" no arguments to quasiquote."
+        except-message: ." no arguments to quasiquote." recoverable-exception throw
     then
 
     2dup cdr ( env args args-cdr )
     nil? false = if
-        recoverable-exception throw" too many arguments to quasiquote."
+        except-message: ." too many arguments to quasiquote." recoverable-exception throw
     then
 
     2drop car ( env arg )
@@ -1606,7 +1600,7 @@ hide env
 : flatten-proc-args ( argvals argnames -- argvals' argnames' )
     nil? if
         2over nil? false = if
-            recoverable-exception throw" Too many arguments for compound procedure."
+            except-message: ." Too many arguments for compound procedure." recoverable-exception throw
         else
             2drop
         then
@@ -1623,7 +1617,7 @@ hide env
 
     2over
     nil? if
-        recoverable-exception throw" Too few arguments for compound procedure."
+        except-message: ." Too few arguments for compound procedure." recoverable-exception throw
     else
         cdr
     then
@@ -1658,7 +1652,7 @@ hide env
                 R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
 
-            recoverable-exception throw" Object not applicable."
+            except-message: ." object not applicable." recoverable-exception throw
         endcase
 ;
 
@@ -1781,7 +1775,7 @@ hide env
         then
     then
 
-    recoverable-exception throw" Tried to evaluate object with unknown type."
+    except-message: ." tried to evaluate object with unknown type." recoverable-exception throw
 ; is eval
 
 \ }}}
@@ -1880,7 +1874,7 @@ hide env
     none-type istype? if printnone exit then
     port-type istype? if printport exit then
 
-    recoverable-exception throw" Tried to print object with unknown type."
+    except-message: ." tried to print object with unknown type." recoverable-exception throw
 ; is print
 
 \ }}}
