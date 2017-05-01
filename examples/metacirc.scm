@@ -8,8 +8,6 @@
 
 ;; Verbatim code from SICP
 
-(display "eval and apply\n")
-
 (define (eval exp env)
   (cond ((self-evaluating? exp) 
          exp)
@@ -137,8 +135,6 @@
       (cddr exp)))) ; body
 
 
-(display "lambda... \n")
-
 (define (lambda? exp) 
   (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
@@ -185,8 +181,6 @@
 (define (rest-operands ops) (cdr ops))
 
 
-(display "cond... \n")
-
 (define (cond? exp) 
   (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
@@ -223,9 +217,6 @@
   (eq? x false))
 
 
-(display "make-procedure...\n")
-
-
 (define (make-procedure parameters body env)
   (list 'procedure parameters body env))
 (define (compound-procedure? p)
@@ -239,18 +230,13 @@
 (define the-empty-environment '())
 
 
-(display "make-frame\n")
-
 (define (make-frame variables values)
   (cons variables values))
 (define (frame-variables frame) (car frame))
 (define (frame-values frame) (cdr frame))
 (define (add-binding-to-frame! var val frame)
-  (display "Adding binding to frame... ")
   (set-car! frame (cons var (car frame)))
   (set-cdr! frame (cons val (cdr frame))))
-
-(display "extend-environment\n")
 
 (define (extend-environment vars vals base-env)
   (if (= (length vars) (length vals))
@@ -262,8 +248,6 @@
       (error "Too few arguments supplied" 
              vars 
              vals))))
-
-(display "lookup-variable\n")
 
 (define (lookup-variable-value var env)
   (define (env-loop env)
@@ -282,8 +266,6 @@
               (frame-values frame)))))
   (env-loop env))
 
-(display "set-variable\n")
-
 (define (set-variable-value! var val env)
   (define (env-loop env)
     (define (scan vars vals)
@@ -301,29 +283,19 @@
               (frame-values frame)))))
   (env-loop env))
 
-(display "define-variable\n")
-
 (define (define-variable! var val env)
-  (display "Defining a variable...\n")
   (let ((frame (first-frame env)))
     (define (scan vars vals)
-      (display "Scanning for ") (display var) (display " in ") (display vars) (display "...\n")
       (cond ((null? vars)
-             (begin (display "adding binding\n")
              (add-binding-to-frame! 
-               var val frame)))
+               var val frame))
             ((eq? var (car vars))
-             (begin (display "replacing binding\n")
-             (set-car! vals val)))
+             (set-car! vals val))
             (else
-              (begin
-                (display "iterating\n")
                 (scan (cdr vars) 
-                        (cdr vals))))))
+                        (cdr vals)))))
     (scan (frame-variables frame)
           (frame-values frame))))
-
-(display "setup-environment...\n")
 
 (define (setup-environment)
   (let ((initial-env
@@ -331,7 +303,6 @@
             (primitive-procedure-names)
             (primitive-procedure-objects)
             the-empty-environment)))
-    (display "Setting up the environment..\n")
     (define-variable! 'true true initial-env)
     (define-variable! 'false false initial-env)
     initial-env))
@@ -368,8 +339,6 @@
 (define output-prompt ";;; M-Eval value:")
 
 
-(display "driver-loop...\n") 
-
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
@@ -399,3 +368,4 @@
 
 (define the-global-environment (setup-environment))
 
+(driver-loop)
