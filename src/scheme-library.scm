@@ -253,6 +253,14 @@
               `((lambda ,(map (lambda (x) (car x)) args)
                  ,@body) ,@(map (lambda (x) (cadr x)) args)))
 
+; let*
+
+(define-macro (let* args . body)
+              (if (null? args)
+                `(let () ,@body)
+                `(let (,(car args))
+                   (let* ,(cdr args) ,@body))))
+
 ; while
 
 (define-macro (while condition . body)

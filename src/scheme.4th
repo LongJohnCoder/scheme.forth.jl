@@ -1652,7 +1652,7 @@ hide env
                 R> drop ['] eval goto-deferred  \ Tail call optimization
             endof
 
-            except-message: ." object not applicable." recoverable-exception throw
+            except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
         endcase
 ;
 
