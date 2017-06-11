@@ -1749,30 +1749,14 @@ hide env
         2over 2over ( env exp env exp )
         operator ( env exp env opname )
 
-        2dup lookup-macro nil? false = if
-             \ Macro function evaluation
+        2swap eval ( env exp proc )
 
-            ( env exp env opname mproc )
-            2swap 2drop -2rot 2drop cdr ( env mproc body )
+        -2rot ( proc env exp )
+        operands 2swap ( proc operands env )
+        list-of-vals ( proc argvals )
 
-            macro-expand
-
-            2swap
-            ['] eval goto-deferred
-        else
-           \ Regular function application
-
-            2drop ( env exp env opname )
-
-            2swap eval ( env exp proc )
-
-            -2rot ( proc env exp )
-            operands 2swap ( proc operands env )
-            list-of-vals ( proc argvals )
-
-            apply
-            exit
-        then
+        apply
+        exit
     then
 
     except-message: ." tried to evaluate object with unknown type." recoverable-exception throw
@@ -2014,7 +1998,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    s" scheme-library.scm" load 2drop
+\    s" scheme-library.scm" load 2drop
     
 \ }}}
 
@@ -2045,7 +2029,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    welcome-symbol nil cons global-env obj@ eval 2drop
+    \ welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
