@@ -1783,9 +1783,29 @@ defer expand
     R> drop ['] expand goto-deferred
 ;
 
+: expand-definition ( exp -- result )
+    define-symbol 2swap
+
+    2dup definition-var
+    2swap definition-val expand
+    nil ( define var val' nil )
+
+    cons cons cons ;
+
+: expand-assignment ( exp -- result )
+    set!-symbol 2swap
+
+    2dup assignment-var
+    2swap assignment-val expand
+    nil ( define var val' nil )
+
+    cons cons cons ;
+
 :noname ( exp -- result )
 
     expand-macro
+
+    quote? if exit then
 
     quasiquote? if expand-quasiquote exit then
 

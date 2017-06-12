@@ -7,3 +7,8 @@
               (if (pair? args)
                 `(define ,(car args) (lambda ,(cdr args) ,@body))
                 'no-match))
+
+;; Macro expansion test code
+
+(define-macro (test)
+              '(begin (display "Hello!") (newline)))
