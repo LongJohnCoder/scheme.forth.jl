@@ -1766,6 +1766,15 @@ hide env
     extend-env eval-sequence eval
 ;
 
+: expand-quasiquote ;
+: expand-definition ;
+: expand-assignment ;
+: expand-define-macro ;
+: expand-if ;
+: expand-lambda ;
+: expand-begin ;
+: expand-application ;
+
 :noname ( exp -- result )
 
     quasiquote? if expand-quasiquote exit then
