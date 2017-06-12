@@ -263,6 +263,7 @@ create-symbol lambda            lambda-symbol
 create-symbol λ                 λ-symbol
 create-symbol begin             begin-symbol
 create-symbol eof               eof-symbol
+create-symbol no-match          no-match-symbol
 
 \ Symbol to be bound to welcome message procedure by library
 create-symbol welcome           welcome-symbol
@@ -1403,34 +1404,21 @@ defer eval-quasiquote-item
 : definition? ( obj -- obj bool )
     define-symbol tagged-list? ;
 
-: make-lambda ( params body -- lambda-exp )
-    lambda-symbol -2rot cons cons ;
+: definition-var ( obj -- var )
+    cdr car ;
 
-( Handles iterative expansion of defines in
-  terms of nested lambdas. Most Schemes only
-  handle one iteration of expansion! )
-: definition-var-val ( obj -- var val )
-
-    cdr 2dup cdr 2swap car ( val var )
-
-    begin
-        symbol-type istype? false =
-    while
-        2dup cdr 2swap car ( val formals var' )
-        -2rot 2swap ( var' formals val )
-        make-lambda nil cons ( var' val' )
-        2swap ( val' var' )
-    repeat
-
-    2swap car
-;
+: definition-val ( obj -- val )
+    cdr cdr car ;
 
 : eval-definition ( obj env -- res )
-    2dup 2rot ( env env obj )
-    definition-var-val ( env env var val )
-    2rot eval  ( env var val )
+    2swap
+    2over 2over
+    definition-val 2swap
+    eval
 
-    2rot ( var val env )
+    2swap definition-var 2swap
+
+    2rot
     define-var
 
     ok-symbol
@@ -1766,6 +1754,8 @@ hide env
     extend-env eval-sequence eval
 ;
 
+defer expand
+
 : expand-quasiquote ;
 : expand-definition ;
 : expand-assignment ;
@@ -1775,7 +1765,27 @@ hide env
 : expand-begin ;
 : expand-application ;
 
+: expand-macro ( exp -- result )
+    pair-type istype? invert if exit then
+    2dup car symbol-type istype? invert if 2drop exit then
+    
+    lookup-macro nil? if
+        2drop exit then
+
+    2over cdr macro-eval
+
+    2dup no-match-symbol objeq? if
+        2drop exit
+    else
+        2swap 2drop
+    then
+
+    R> drop ['] expand goto-deferred
+;
+
 :noname ( exp -- result )
+
+    expand-macro
 
     quasiquote? if expand-quasiquote exit then
 
@@ -1789,9 +1799,9 @@ hide env
 
     lambda? if expand-lambda exit then
 
-    begin? if expand-sequence exit then
+    begin? if expand-begin exit then
 
-    application? if expand-apply exit then
+    application? if expand-application exit then
 
 ; is expand
 
@@ -2032,6 +2042,8 @@ variable gc-stack-depth
 \ ---- Standard Library ---- {{{
 
     include scheme-primitives.4th
+
+    s" scheme-derived-forms.scm" load 2drop
 
 \    s" scheme-library.scm" load 2drop
     
