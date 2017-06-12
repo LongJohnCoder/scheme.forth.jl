@@ -1757,12 +1757,9 @@ hide env
 defer expand
 
 : expand-quasiquote ;
-: expand-definition ;
-: expand-assignment ;
 : expand-define-macro ;
 : expand-if ;
 : expand-lambda ;
-: expand-begin ;
 : expand-application ;
 
 : expand-macro ( exp -- result )
@@ -1800,6 +1797,27 @@ defer expand
     nil ( define var val' nil )
 
     cons cons cons ;
+
+: expand-sequence ( exp -- res )
+    nil? if exit then
+
+    2dup car expand
+    2swap cdr recurse
+
+    cons ;
+
+: expand-begin ( exp -- res )
+    begin-symbol 2swap
+    begin-actions expand-sequence
+
+    cons ;
+
+: expand-lambda ( exp -- res )
+    lambda-symbol 2swap
+    2dup lambda-parameters
+    2swap lambda-body expand-sequence
+
+    cons cons ;
 
 :noname ( exp -- result )
 
