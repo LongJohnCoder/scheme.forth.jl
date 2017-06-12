@@ -1656,20 +1656,6 @@ hide env
         endcase
 ;
 
-( Simply evaluates the given procedure with expbody as its argument. )
-: macro-expand ( proc expbody -- result )
-    2swap
-    2dup procedure-body ( expbody proc procbody )
-    -2rot 2dup procedure-params ( procbody expbody proc argnames )
-    -2rot procedure-env ( procbody argnames expbody procenv )
-    
-    -2rot 2swap
-    flatten-proc-args
-    2swap 2rot
-
-    extend-env eval-sequence eval
-;
-
 :noname ( obj env -- result )
     2swap
 
@@ -1761,6 +1747,44 @@ hide env
 
     except-message: ." tried to evaluate object with unknown type." recoverable-exception throw
 ; is eval
+
+\ }}}
+
+\ ---- Macro Expansion ---- {{{
+
+( Simply evaluates the given procedure with expbody as its argument. )
+: macro-eval ( proc expbody -- result )
+    2swap
+    2dup procedure-body ( expbody proc procbody )
+    -2rot 2dup procedure-params ( procbody expbody proc argnames )
+    -2rot procedure-env ( procbody argnames expbody procenv )
+    
+    -2rot 2swap
+    flatten-proc-args
+    2swap 2rot
+
+    extend-env eval-sequence eval
+;
+
+:noname ( exp -- result )
+
+    quasiquote? if expand-quasiquote exit then
+
+    definition? if expand-definition exit then
+
+    assignment? if expand-assignment exit then
+
+    macro-definition? if expand-define-macro exit then
+
+    if? if expand-if exit then
+
+    lambda? if expand-lambda exit then
+
+    begin? if expand-sequence exit then
+
+    application? if expand-apply exit then
+
+; is expand
 
 \ }}}
 
@@ -1988,6 +2012,8 @@ variable gc-stack-depth
 
         2swap 2drop ( port obj )
 
+        expand
+
         global-env obj@ eval ( port res )
     again
 ;
@@ -2015,6 +2041,8 @@ variable gc-stack-depth
         bold fg blue ." Moriturus te saluto." reset-term cr
         true exit
     then
+
+    expand
 
     global-env obj@ eval
 
