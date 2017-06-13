@@ -1756,12 +1756,6 @@ hide env
 
 defer expand
 
-: expand-quasiquote ;
-: expand-define-macro ;
-: expand-if ;
-: expand-lambda ;
-: expand-application ;
-
 : expand-macro ( exp -- result )
     pair-type istype? invert if exit then
     2dup car symbol-type istype? invert if 2drop exit then
@@ -1779,6 +1773,28 @@ defer expand
 
     R> drop ['] expand goto-deferred
 ;
+
+: expand-quasiquote-item ( exp -- result )
+    nil? if exit then
+
+    unquote? if
+        unquote-symbol 2swap cdr expand nil cons cons
+        exit
+    then
+    
+    pair? if
+        2dup car recurse
+        2swap cdr recurse
+        cons
+    then
+;
+
+: expand-quasiquote ( exp -- result )
+    quasiquote-symbol 2swap cdr
+
+    expand-quasiquote-item
+
+    cons ;
 
 : expand-definition ( exp -- result )
     define-symbol 2swap
@@ -1798,7 +1814,7 @@ defer expand
 
     cons cons cons ;
 
-: expand-sequence ( exp -- res )
+: expand-list ( exp -- res )
     nil? if exit then
 
     2dup car expand
@@ -1806,22 +1822,53 @@ defer expand
 
     cons ;
 
-: expand-begin ( exp -- res )
-    begin-symbol 2swap
-    begin-actions expand-sequence
+: macro-definition-nameparams
+    cdr car ;
 
-    cons ;
+: expand-define-macro ( exp -- res )
+    define-macro-symbol 2swap
+    2dup macro-definition-nameparams
+    2swap macro-definition-body expand-list
+
+    cons cons ;
 
 : expand-lambda ( exp -- res )
     lambda-symbol 2swap
     2dup lambda-parameters
-    2swap lambda-body expand-sequence
+    2swap lambda-body expand-list
 
     cons cons ;
+
+: expand-if ( exp -- res )
+    if-symbol 2swap
+    
+    2dup if-predicate expand
+    2swap 2dup if-consequent expand
+    2swap if-alternative none? if
+        2drop nil
+    else
+        nil cons
+    then
+
+    cons cons cons ;
+
+: expand-begin ( exp -- res )
+    begin-symbol 2swap
+    begin-actions expand-list
+
+    cons ;
+
+: expand-application ( exp -- res )
+    2dup operator
+    2swap operands expand-list
+
+    cons ;
 
 :noname ( exp -- result )
 
     expand-macro
+
+    self-evaluating? if exit then
 
     quote? if exit then
 
@@ -1833,9 +1880,9 @@ defer expand
 
     macro-definition? if expand-define-macro exit then
 
-    if? if expand-if exit then
-
     lambda? if expand-lambda exit then
+
+    if? if expand-if exit then
 
     begin? if expand-begin exit then
 
