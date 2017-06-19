@@ -611,12 +611,15 @@ defer display
     nil? if
         ." Error."
     else
-        ." Error: "
+        ." Error:"
 
-        begin
-            2dup car print
-            cdr nil?
-        until
+        2dup car space display
+        cdr nil? invert if
+            begin
+                2dup car space print
+                cdr nil?
+            until
+        then
 
         2drop
     then
