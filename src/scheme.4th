@@ -10,6 +10,7 @@ include float.4th
 include debugging.4th
 
 defer read
+defer expand
 defer eval
 defer print
 
@@ -261,7 +262,6 @@ create-symbol ok                ok-symbol
 create-symbol if                if-symbol
 create-symbol lambda            lambda-symbol
 create-symbol λ                 λ-symbol
-create-symbol begin             begin-symbol
 create-symbol eof               eof-symbol
 create-symbol no-match          no-match-symbol
 
@@ -1512,12 +1512,6 @@ hide env
 : lambda-body ( obj -- body )
     cdr cdr ;
 
-: begin? ( obj -- obj bool )
-    begin-symbol tagged-list? ;
-
-: begin-actions ( obj -- actions )
-    cdr ;
-
 : eval-sequence ( explist env -- finalexp env )
     ( Evaluates all bar the final expressions in
       an an expression list. The final expression
@@ -1712,12 +1706,6 @@ hide env
         exit
     then
 
-    begin? if
-        begin-actions 2swap
-        eval-sequence
-        ['] eval goto-deferred
-    then
-
     application? if
 
         2over 2over ( env exp env exp )
@@ -1754,8 +1742,6 @@ hide env
     extend-env eval-sequence eval
 ;
 
-defer expand
-
 : expand-macro ( exp -- result )
     pair-type istype? invert if exit then
     2dup car symbol-type istype? invert if 2drop exit then
@@ -1778,11 +1764,16 @@ defer expand
     nil? if exit then
 
     unquote? if
-        unquote-symbol 2swap cdr expand nil cons cons
+        unquote-symbol 2swap cdr car expand nil cons cons
+        exit
+    then
+
+    unquote-splicing? if
+        unquote-splicing-symbol 2swap cdr car expand nil cons cons
         exit
     then
     
-    pair? if
+    pair-type istype? if
         2dup car recurse
         2swap cdr recurse
         cons
@@ -1847,25 +1838,18 @@ defer expand
     2swap if-alternative none? if
         2drop nil
     else
-        nil cons
+        expand nil cons
     then
 
     cons cons cons ;
 
-: expand-begin ( exp -- res )
-    begin-symbol 2swap
-    begin-actions expand-list
-
-    cons ;
-
 : expand-application ( exp -- res )
-    2dup operator
+    2dup operator expand
     2swap operands expand-list
 
     cons ;
 
 :noname ( exp -- result )
-
     expand-macro
 
     self-evaluating? if exit then
@@ -1883,8 +1867,6 @@ defer expand
     lambda? if expand-lambda exit then
 
     if? if expand-if exit then
-
-    begin? if expand-begin exit then
 
     application? if expand-application exit then
 
@@ -2128,9 +2110,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    s" scheme-derived-forms.scm" load 2drop
-
-\    s" scheme-library.scm" load 2drop
+    s" scheme-library.scm" load 2drop
     
 \ }}}
 
@@ -2163,7 +2143,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    \ welcome-symbol nil cons global-env obj@ eval 2drop
+    welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch

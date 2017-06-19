@@ -1,26 +1,127 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Standard Library Procedures and Macros ;; 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; DERIVED FORMS
 
-;; MISC
+;; define (procedural syntax)
 
-(define (not x) (if x #f #t))
+(define-macro (define args . body)
+              (if (pair? args)
+                `(define ,(car args) (lambda ,(cdr args) ,@body))
+                'no-match))
 
-(define (list . args) args)
+;; begin
 
-(define (caar l) (car (car l)))
-(define (cadr l) (car (cdr l)))
-(define (cdar l) (cdr (car l)))
-(define (cddr l) (cdr (cdr l)))
-(define (caaar l) (car (car (car l))))
-(define (caadr l) (car (car (cdr l))))
-(define (cadar l) (car (cdr (car l))))
-(define (caddr l) (car (cdr (cdr l))))
-(define (cdaar l) (cdr (car (car l))))
-(define (cdadr l) (cdr (car (cdr l))))
-(define (cddar l) (cdr (cdr (car l))))
-(define (cdddr l) (cdr (cdr (cdr l))))
-(define (cadddr l) (car (cdr (cdr (cdr l)))))
+(define-macro (begin . sequence)
+              `((lambda () ,@sequence)))
+
+;; caddr etc.
+
+(define-macro (caar l) `(car (car ,l)))
+(define-macro (cadr l) `(car (cdr ,l)))
+(define-macro (cdar l) `(cdr (car ,l)))
+(define-macro (cddr l) `(cdr (cdr ,l)))
+(define-macro (caaar l) `(car (car (car ,l))))
+(define-macro (caadr l) `(car (car (cdr ,l))))
+(define-macro (cadar l) `(car (cdr (car ,l))))
+(define-macro (caddr l) `(car (cdr (cdr ,l))))
+(define-macro (cdaar l) `(cdr (car (car ,l))))
+(define-macro (cdadr l) `(cdr (car (cdr ,l))))
+(define-macro (cddar l) `(cdr (cdr (car ,l))))
+(define-macro (cdddr l) `(cdr (cdr (cdr ,l))))
+(define-macro (cadddr l) `(car (cdr (cdr (cdr ,l)))))
+
+
+;; Methods used in remaining macro definitions:
+
+(define (map proc l)
+  (if (null? l)
+    '()
+    (cons (proc (car l)) (map proc (cdr l)))))
+
+;; let
+
+(define-macro (let args . body)
+              `((lambda ,(map (lambda (x) (car x)) args)
+                 ,@body) ,@(map (lambda (x) (cadr x)) args)))
+
+;; let*
+
+(define-macro (let* args . body)
+              (if (null? args)
+                `(let () ,@body)
+                `(let (,(car args))
+                   (let* ,(cdr args) ,@body))))
+
+;; while
+
+(define-macro (while condition . body)
+              (let ((loop (gensym)))
+                `(begin
+                   (define (,loop)
+                     (if ,condition
+                       (begin ,@body (,loop))))
+                   (,loop))))
+
+;; cond
+
+((lambda ()
+   (define (cond-predicate clause) (car clause))
+   (define (cond-actions clause) (cdr clause))
+   (define (cond-else-clause? clause)
+     (eq? (cond-predicate clause) 'else))
+
+   (define (expand-clauses clauses)
+     (if (null? clauses)
+       (none)
+       (let ((first (car clauses))
+             (rest (cdr clauses)))
+         (if (cond-else-clause? first)
+           (if (null? rest)
+             `(begin ,@(cond-actions first))
+             (error "else clause isn't last in cond expression."))
+           `(if ,(cond-predicate first)
+              (begin ,@(cond-actions first))
+              ,(expand-clauses rest))))))
+
+   (define-macro (cond . clauses)
+                 (if (null? clauses)
+                   (error "cond requires at least one clause.")
+                   (expand-clauses clauses)))))
+
+;; and
+
+((lambda ()
+   (define (expand-and-expressions expressions)
+     (let ((first (car expressions))
+           (rest (cdr expressions)))
+       (if (null? rest)
+         first
+         `(if ,first
+            ,(expand-and-expressions rest)
+            #f))))
+
+   (define-macro (and . expressions)
+                 (if (null? expressions)
+                   #t
+                   (expand-and-expressions expressions)))
+   ))
+
+;; or
+
+((lambda ()
+   (define (expand-or-expressions expressions)
+     (if (null? expressions)
+       #f
+       (let ((first (car expressions))
+             (rest (cdr expressions))
+             (val (gensym)))
+         `(let ((,val ,first))
+            (if ,val
+              ,val
+              ,(expand-or-expressions rest))))))
+
+   (define-macro (or . expressions)
+                 (expand-or-expressions expressions))
+   ))
+
 
 ;; FUNCTIONAL PROGRAMMING
 
@@ -36,10 +137,6 @@
       (car l)
       (fold-left proc (proc (car l) (car (cdr l))) (cdr (cdr l))))))
 
-(define (map proc l)
-  (if (null? l)
-    '()
-    (cons (proc (car l)) (map proc (cdr l)))))
 
 ;; NUMBERS
 
@@ -214,6 +311,7 @@
     (if (flonum? x) #t
       (if (ratnum? x) #t #f))))
 
+
 ;; LISTS
 
 ; Return number of items in list
@@ -245,100 +343,7 @@
     (append (reverse (cdr l)) (list (car l)))))
 
 
-;; LIBRARY SPECIAL FORMS
-
-; let
-
-(define-macro (let args . body)
-              `((lambda ,(map (lambda (x) (car x)) args)
-                 ,@body) ,@(map (lambda (x) (cadr x)) args)))
-
-; let*
-
-(define-macro (let* args . body)
-              (if (null? args)
-                `(let () ,@body)
-                `(let (,(car args))
-                   (let* ,(cdr args) ,@body))))
-
-; while
-
-(define-macro (while condition . body)
-              (let ((loop (gensym)))
-                `(begin
-                   (define (,loop)
-                     (if ,condition
-                       (begin ,@body (,loop))))
-                   (,loop))))
-
-; cond
-
-((lambda ()
-   (define (cond-predicate clause) (car clause))
-   (define (cond-actions clause) (cdr clause))
-   (define (cond-else-clause? clause)
-     (eq? (cond-predicate clause) 'else))
-
-   (define (expand-clauses clauses)
-     (if (null? clauses)
-       (none)
-       (let ((first (car clauses))
-             (rest (cdr clauses)))
-         (if (cond-else-clause? first)
-           (if (null? rest)
-             `(begin ,@(cond-actions first))
-             (error "else clause isn't last in cond expression."))
-           `(if ,(cond-predicate first)
-              (begin ,@(cond-actions first))
-              ,(expand-clauses rest))))))
-
-   (define-macro (cond . clauses)
-                 (if (null? clauses)
-                   (error "cond requires at least one clause.")
-                   (expand-clauses clauses)))
-   ))
-
-; and
-
-((lambda ()
-   (define (expand-and-expressions expressions)
-     (let ((first (car expressions))
-           (rest (cdr expressions)))
-       (if (null? rest)
-         first
-         `(if ,first
-            ,(expand-and-expressions rest)
-            #f))))
-
-   (define-macro (and . expressions)
-                 (if (null? expressions)
-                   #t
-                   (expand-and-expressions expressions)))
-   ))
-
-; or
-
-((lambda ()
-   (define (expand-or-expressions expressions)
-     (if (null? expressions)
-       #f
-       (let ((first (car expressions))
-             (rest (cdr expressions))
-             (val (gensym)))
-         `(let ((,val ,first))
-            (if ,val
-              ,val
-              ,(expand-or-expressions rest))))))
-
-   (define-macro (or . expressions)
-                 (expand-or-expressions expressions))
-   ))
-
-
 ;; TESTING
-
-(define-macro (backwards . body)
-              (cons 'begin (reverse body)))
 
 ; Test for the while macro.
 (define (count)
@@ -364,6 +369,8 @@
   (if (fix:= n 0)
     0
     (fix:+ n (sum-recurse (fix:- n 1)))))
+
+
 
 ;; MISC
 
