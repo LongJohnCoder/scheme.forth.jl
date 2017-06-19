@@ -611,7 +611,14 @@ defer display
     nil? if
         ." Error."
     else
-        ." Error: " car display
+        ." Error: "
+
+        begin
+            2dup car print
+            cdr nil?
+        until
+
+        2drop
     then
 
     reset-term

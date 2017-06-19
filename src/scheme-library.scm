@@ -122,6 +122,10 @@
                  (expand-or-expressions expressions))
    ))
 
+;; not
+
+(define-macro (not x)
+              `(if ,x #f #t))
 
 ;; FUNCTIONAL PROGRAMMING
 
@@ -313,6 +317,9 @@
 
 
 ;; LISTS
+
+; List creation
+(define (list . args) args)
 
 ; Return number of items in list
 (define (length l)

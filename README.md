@@ -75,8 +75,15 @@ You'll then be greeted by the following prompt:
     ;; M-Eval input:
 
 At this point you can start entering Scheme commands... but be prepared to wait
-a _long_ time for the result.  For instance, the following example from SICP
-defines and demonstrates a recursive list append procedure:
+a while for the result.  After all, when evaluating commands in the MCE you are
+running a program in a Scheme interpreter running inside another Scheme
+interpreter which is itself running on a Forth system that is implemented atop
+the Julia numerical computing environment.  **That's three levels of
+abstraction more than a native Julia program experiences**, so some delay is to
+be expected!
+
+For instance, the following example from SICP defines and demonstrates a
+recursive list append procedure:
 
     (define (append x y)
        (if (null? x)
@@ -93,10 +100,7 @@ defines and demonstrates a recursive list append procedure:
      ;;; M-Eval value:
      (a b c d e f)
 
-Be prepared to wait 20 min or more for the final result to be printed.  (Given
-that at this point we have a program running in a Scheme interpreter running
-inside another Scheme interpreter which is itself running on a Forth system
-that is implemented in Julia, this should not be a surprise.)
+You may have to wait a minute or so for the final result to be printed.
 
 License
 =======
