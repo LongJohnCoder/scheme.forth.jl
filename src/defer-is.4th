@@ -33,9 +33,3 @@ hide abort-defer
     0 ,
     here docol ,
     [compile] ] ;
-
-
-\ Need this for tail call optimization
-
-: goto-deferred ( cfa -- )
-    R> drop >body @ >body >R ;

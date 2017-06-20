@@ -3,6 +3,7 @@ scheme definitions
 
 include term-colours.4th
 include defer-is.4th
+include goto.4th
 include catch-throw.4th
 include integer.4th
 include float.4th
@@ -162,6 +163,10 @@ variable nextfree
     2swap ( c1 c2 a1 a2 )
     R> R>
 ;
+
+: 2pick ( an bn an-1 bn-1 ... a0 b0 n -- an bn an-1 bn-1 ... a0 b0 an bn )
+    2* 1+ dup
+    >R pick R> pick ;
 
 \ }}}
 
@@ -1740,8 +1745,8 @@ hide env
     2drop \ get rid of null
 
     \ Final element of eproc list is primitive procedure
-    drop        \ dump type signifier
-    R> drop >body >R  \ GOTO primitive procedure (executor)
+    drop \ dump type signifier
+    goto \ jump straight to primitive procedure (executor)
 ;
 
 : self-evaluating-executor ( env exp -- exp )
@@ -1770,11 +1775,27 @@ hide env
     nil cons cons
 ;
 
+: definition-executor ( env var val-eproc -- ok )
+     2rot 2dup 2rot ( var env env val-eproc )
+    evaluate-eproc 2swap ( var val env )
+    define-var
+    ok-symbol
+;
+
+: analyze-definition ( exp -- eproc )
+    2dup definition-var
+    2swap definition-val analyze
+
+    ['] definition-executor primitive-proc-type
+    nil cons cons cons
+;
+
 : assignment-executor ( env var val-eproc -- ok )
     2rot 2dup 2rot ( var env env val-eproc )
     evaluate-eproc 2swap ( var val env )
     set-var
-    ok-symbol ;
+    ok-symbol
+;
 
 : analyze-assignment ( exp -- eproc )
     2dup assignment-var
@@ -1782,6 +1803,25 @@ hide env
 
     ['] assignment-executor primitive-proc-type
     nil cons cons cons
+;
+
+: if-executor ( env pproc cproc aproc -- res )
+    2rot 3 2pick 2swap ( env cproc aproc env pproc )
+    evaluate-eproc
+    true? if
+        2drop evaluate-eproc
+    else
+        2swap 2drop evaluate-eproc
+    then
+;
+
+: analyze-if ( exp -- eproc )
+    2dup if-predicate analyze
+    2swap 2dup if-consequent analyze
+    2swap if-alternative analyze
+
+    ['] if-executor primitive-proc-type
+    nil cons cons cons cons
 ;
 
 :noname ( exp --- eproc )
@@ -1801,8 +1841,18 @@ hide env
         exit
     then
 
+    definition? if
+        analyze-definition
+        exit
+    then
+
     assignment? if
         analyze-assignment
+        exit
+    then
+
+    if? if
+        analyze-if
         exit
     then
 
