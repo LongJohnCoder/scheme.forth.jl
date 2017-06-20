@@ -11,6 +11,7 @@ include debugging.4th
 
 defer read
 defer expand
+defer analyze
 defer eval
 defer print
 
@@ -1726,6 +1727,88 @@ hide env
 
 \ }}}
 
+\ ---- Analyze ----
+
+: evaluate-eproc ( env eproc --- res )
+    begin
+        nil? invert
+    while
+        2dup car
+        2swap cdr
+    repeat
+    
+    2drop \ get rid of null
+
+    \ Final element of eproc list is primitive procedure
+    drop        \ dump type signifier
+    R> drop >body >R  \ GOTO primitive procedure (executor)
+;
+
+: self-evaluating-executor ( env exp -- exp )
+    2swap 2drop ;
+
+: analyze-self-evaluating ( exp --- eproc )
+    ['] self-evaluating-executor primitive-proc-type
+    nil cons cons
+;
+
+: quote-executor ( env exp -- exp )
+    2swap 2drop ;
+
+: analyze-quoted ( exp -- eproc )
+    quote-body
+
+    ['] quote-executor primitive-proc-type
+    nil cons cons
+;
+
+: variable-executor ( env var -- val )
+    2swap lookup-var ;
+
+: analyze-variable ( exp -- eproc )
+    ['] variable-executor primitive-proc-type
+    nil cons cons
+;
+
+: assignment-executor ( env var val-eproc -- ok )
+    2rot 2dup 2rot ( var env env val-eproc )
+    evaluate-eproc 2swap ( var val env )
+    set-var
+    ok-symbol ;
+
+: analyze-assignment ( exp -- eproc )
+    2dup assignment-var
+    2swap assignment-val analyze ( var val-eproc )
+
+    ['] assignment-executor primitive-proc-type
+    nil cons cons cons
+;
+
+:noname ( exp --- eproc )
+
+    self-evaluating? if
+        analyze-self-evaluating
+        exit
+    then
+
+    quote? if
+        analyze-quoted
+        exit
+    then
+    
+    variable? if
+        analyze-variable
+        exit
+    then
+
+    assignment? if
+        analyze-assignment
+        exit
+    then
+
+; is analyze
+
+
 \ ---- Macro Expansion ---- {{{
 
 ( Simply evaluates the given procedure with expbody as its argument. )
@@ -2110,7 +2193,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    s" scheme-library.scm" load 2drop
+    \ s" scheme-library.scm" load 2drop
     
 \ }}}
 
@@ -2143,7 +2226,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    welcome-symbol nil cons global-env obj@ eval 2drop
+    \ welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
