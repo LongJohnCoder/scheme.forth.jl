@@ -1737,7 +1737,7 @@ hide env
 : evaluate-eproc ( eproc env --- res )
 
     >R >R
-    
+
     begin
         nil? invert
     while
@@ -1747,10 +1747,13 @@ hide env
     
     2drop \ get rid of null
 
-    R> R>
+    R> R> 2swap
 
     \ Final element of eproc list is primitive procedure
     drop \ dump type signifier
+
+    .s cr \ DEBUG
+
     goto \ jump straight to primitive procedure (executor)
 ;
 
@@ -1896,22 +1899,27 @@ hide env
 ;
 
 : evaluate-operand-eprocs ( env aprocs -- vals )
-    nil? invert if
-        2over 2over car evaluate-eproc ( env aprocs thisres )
-        -rot cdr recurse
+    nil? if
+        2swap 2drop
+    else
+        2over 2over car 2swap evaluate-eproc ( env aprocs thisval )
+        -2rot cdr recurse ( thisval restvals )
+        cons
+    then
 ;
 
 : application-executor ( operator-proc arg-procs env -- res )
     2rot 2over ( aprocs env fproc env )
     evaluate-eproc ( aprocs env proc )
-    2swap -2rot 2over 2swap ( proc env env aprocs )
-    evaluate-operand-eprocs ( proc env vals )
-    
-    2rot ( env vals proc )
+
+    -2rot 2swap ( proc env aprocs )
+    evaluate-operand-eprocs ( proc vals )
+
+    2swap ( vals proc )
     
     dup case
         primitive-proc-type of
-            2rot 2drop execute
+            drop execute
         endof
 
         compound-proc-type of
@@ -1936,7 +1944,7 @@ hide env
     2dup operator analyze
     2swap operands operand-eproc-list
 
-    ['] application-executor
+    ['] application-executor primitive-proc-type
     nil cons cons cons
 ;
 
@@ -1976,6 +1984,14 @@ hide env
         analyze-lambda
         exit
     then
+
+    application? if
+        analyze-application
+        exit
+    then
+
+    
+    except-message: ." tried to analyze unknown expression type." recoverable-exception throw
 
 ; is analyze
 
