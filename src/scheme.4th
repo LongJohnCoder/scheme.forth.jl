@@ -1824,6 +1824,44 @@ hide env
     nil cons cons cons cons
 ;
 
+: sequential-executor ( env eproc1 eproc2 -- res )
+    2swap 2 2pick 2swap ( env eproc2 env eproc1 )
+    evaluate-eproc 2drop
+    evaluate-eproc
+;
+
+: analyze-sequence ( explist -- eproc )
+    nil? if
+        except-message: ." Tried to analyze empty expression sequence." recoverable-exception throw
+    then
+
+    2dup car analyze
+    2swap cdr
+    nil? if
+        2drop
+    else
+        recurse
+        ['] sequential-executor
+        nil cons cons
+    then
+;
+
+: lambda-executor ( env params bproc -- res )
+    2rot make-procedure
+    ( Although this is packaged up as a regular compound procedure,
+      the "body" element contains an _eproc_ to be evaluated in an
+      environment resulting from extending env with the parameter
+      bindings. )
+;
+
+: analyze-lambda ( exp -- eproc )
+    2dup lambda-parameters
+    2swap lambda-body analyze-sequence
+
+    ['] lambda-executor primitive-proc-type
+    nil cons cons cons
+;
+
 :noname ( exp --- eproc )
 
     self-evaluating? if
@@ -1853,6 +1891,11 @@ hide env
 
     if? if
         analyze-if
+        exit
+    then
+
+    lambda? if
+        analyze-lambda
         exit
     then
 
