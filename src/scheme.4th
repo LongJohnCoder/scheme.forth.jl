@@ -1734,7 +1734,10 @@ hide env
 
 \ ---- Analyze ----
 
-: evaluate-eproc ( env eproc --- res )
+: evaluate-eproc ( eproc env --- res )
+
+    >R >R
+    
     begin
         nil? invert
     while
@@ -1744,21 +1747,23 @@ hide env
     
     2drop \ get rid of null
 
+    R> R>
+
     \ Final element of eproc list is primitive procedure
     drop \ dump type signifier
     goto \ jump straight to primitive procedure (executor)
 ;
 
-: self-evaluating-executor ( env exp -- exp )
-    2swap 2drop ;
+: self-evaluating-executor ( exp env -- exp )
+    2drop ;
 
 : analyze-self-evaluating ( exp --- eproc )
     ['] self-evaluating-executor primitive-proc-type
     nil cons cons
 ;
 
-: quote-executor ( env exp -- exp )
-    2swap 2drop ;
+: quote-executor ( exp env -- exp )
+    2drop ;
 
 : analyze-quoted ( exp -- eproc )
     quote-body
@@ -1767,16 +1772,16 @@ hide env
     nil cons cons
 ;
 
-: variable-executor ( env var -- val )
-    2swap lookup-var ;
+: variable-executor ( var env -- val )
+    lookup-var ;
 
 : analyze-variable ( exp -- eproc )
     ['] variable-executor primitive-proc-type
     nil cons cons
 ;
 
-: definition-executor ( env var val-eproc -- ok )
-     2rot 2dup 2rot ( var env env val-eproc )
+: definition-executor ( var val-eproc env -- ok )
+    2swap 2over ( var env val-eproc env )
     evaluate-eproc 2swap ( var val env )
     define-var
     ok-symbol
@@ -1790,8 +1795,8 @@ hide env
     nil cons cons cons
 ;
 
-: assignment-executor ( env var val-eproc -- ok )
-    2rot 2dup 2rot ( var env env val-eproc )
+: assignment-executor ( var val-eproc env -- ok )
+    2swap 2over ( var env val-eproc env )
     evaluate-eproc 2swap ( var val env )
     set-var
     ok-symbol
@@ -1805,14 +1810,17 @@ hide env
     nil cons cons cons
 ;
 
-: if-executor ( env pproc cproc aproc -- res )
-    2rot 3 2pick 2swap ( env cproc aproc env pproc )
+: if-executor ( cproc aproc pproc env -- res )
+    2swap 2over ( cproc aproc env pproc env -- res )
     evaluate-eproc
+
     true? if
-        2drop evaluate-eproc
+        2swap 2drop
     else
-        2swap 2drop evaluate-eproc
+        2rot 2drop
     then
+
+    evaluate-eproc
 ;
 
 : analyze-if ( exp -- eproc )
@@ -1824,30 +1832,41 @@ hide env
     nil cons cons cons cons
 ;
 
-: sequential-executor ( env eproc1 eproc2 -- res )
-    2swap 2 2pick 2swap ( env eproc2 env eproc1 )
-    evaluate-eproc 2drop
-    evaluate-eproc
+: sequence-executor ( eproc-list env -- res )
+    2swap
+
+    begin
+        2dup cdr ( env elist elist-rest)
+        nil? invert
+    while
+
+        -2rot car 2over ( elist-rest env elist-head env )
+        evaluate-eproc  ( elist-rest env head-res )
+        2drop 2swap     ( env elist-rest )
+    repeat
+
+    2drop car 2swap
+    ['] evaluate-eproc goto
+;
+
+
+: (analyze-sequence) ( explist -- eproc-list )
+    nil? if exit then
+
+    2dup car analyze
+    2swap cdr recurse
+
+    cons
 ;
 
 : analyze-sequence ( explist -- eproc )
-    nil? if
-        except-message: ." Tried to analyze empty expression sequence." recoverable-exception throw
-    then
-
-    2dup car analyze
-    2swap cdr
-    nil? if
-        2drop
-    else
-        recurse
-        ['] sequential-executor
-        nil cons cons
-    then
+    (analyze-sequence)
+    ['] sequence-executor primitive-proc-type
+    nil cons cons
 ;
 
-: lambda-executor ( env params bproc -- res )
-    2rot make-procedure
+: lambda-executor ( params bproc env -- res )
+    make-procedure
     ( Although this is packaged up as a regular compound procedure,
       the "body" element contains an _eproc_ to be evaluated in an
       environment resulting from extending env with the parameter
@@ -1856,9 +1875,68 @@ hide env
 
 : analyze-lambda ( exp -- eproc )
     2dup lambda-parameters
-    2swap lambda-body analyze-sequence
+    2swap lambda-body
+
+    nil? if
+        except-message: ." encountered lambda with an empty body." recoverable-exception throw
+    then
+
+    analyze-sequence
 
     ['] lambda-executor primitive-proc-type
+    nil cons cons cons
+;
+
+: operand-eproc-list ( operands -- eprocs )
+    nil? invert if
+        2dup car analyze
+        2swap cdr recurse
+        cons
+    then
+;
+
+: evaluate-operand-eprocs ( env aprocs -- vals )
+    nil? invert if
+        2over 2over car evaluate-eproc ( env aprocs thisres )
+        -rot cdr recurse
+;
+
+: application-executor ( operator-proc arg-procs env -- res )
+    2rot 2over ( aprocs env fproc env )
+    evaluate-eproc ( aprocs env proc )
+    2swap -2rot 2over 2swap ( proc env env aprocs )
+    evaluate-operand-eprocs ( proc env vals )
+    
+    2rot ( env vals proc )
+    
+    dup case
+        primitive-proc-type of
+            2rot 2drop execute
+        endof
+
+        compound-proc-type of
+                2dup procedure-body ( argvals proc body )
+                -2rot 2dup procedure-params ( bproc argvals proc argnames )
+                -2rot procedure-env ( bproc argnames argvals procenv )
+
+                -2rot 2swap
+                flatten-proc-args
+                2swap 2rot
+
+                extend-env ( bproc env )
+
+               ['] evaluate-eproc goto
+        endof
+
+        except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
+    endcase
+;
+
+: analyze-application ( exp -- eproc )
+    2dup operator analyze
+    2swap operands operand-eproc-list
+
+    ['] application-executor
     nil cons cons cons
 ;
 
