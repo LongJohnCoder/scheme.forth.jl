@@ -2021,7 +2021,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    welcome-symbol nil cons global-env obj@ eval 2drop
+    \ welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
