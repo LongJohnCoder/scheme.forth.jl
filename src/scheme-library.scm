@@ -2,14 +2,77 @@
 ;; Standard Library Procedures and Macros ;; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; MISC ESSENTIAL PROCEDURES
+
+(define list
+  (lambda args args))
+
+(define map
+  (lambda (proc l)
+    (if (null? l)
+        '()
+        (cons (proc (car l)) (map proc (cdr l))))))
+
+(define join-lists
+  (lambda (l1 l2)
+    (if (null? l1)
+      l2
+      (cons (car l1) (join-lists (cdr l1) l2)))))
+
+; Append an arbitrary number of lists together
+(define append
+  (lambda lists
+  (if (null? lists)
+    ()
+    (if (null? (cdr lists))
+      (car lists)
+      (join-lists (car lists) (apply append (cdr lists)))))))
+
+
 ;; DERIVED FORMS
 
-;; define (procedural syntax)
+;; define
 
 (define-macro (define args . body)
               (if (pair? args)
-                `(define ,(car args) (lambda ,(cdr args) ,@body))
+                (list 'define (car args) (join-lists (list 'lambda (cdr args)) body))
                 'no-match))
+
+;; not
+
+(define-macro (not x)
+              (list 'if x #f #t))
+
+;; let
+
+(define-macro (let args . body)
+              (join-lists
+                (list (join-lists (list 'lambda (map (lambda (x) (car x)) args)) body))
+                (map (lambda (x) (car (cdr x))) args)))
+
+;; quasiquote/unquote (one nesting level only)
+
+((lambda ()
+   (define (qqhelper l)
+     (if (null? l)
+       l
+       (let ((head (car l))
+             (tail (cdr l)))
+
+         (if (pair? head)
+             (if (eq? (car head) 'unquote)
+                 (list 'cons (car (cdr head)) (qqhelper tail))
+                 (if (eq? (car head) 'unquote-splicing)
+                     (list 'join-lists (car (cdr head)) (qqhelper tail))
+                     (list 'cons (list 'quasiquote head) (qqhelper tail))))
+             (if (symbol? head)
+                 (list 'cons (list 'quote head) (qqhelper tail))
+                 (list 'cons head (qqhelper tail)))))))
+
+   (define-macro (quasiquote arg)
+                 (if (not (pair? arg))
+                   (list 'quote arg)
+                   (qqhelper arg)))))
 
 ;; begin
 
@@ -31,20 +94,6 @@
 (define-macro (cddar l) `(cdr (cdr (car ,l))))
 (define-macro (cdddr l) `(cdr (cdr (cdr ,l))))
 (define-macro (cadddr l) `(car (cdr (cdr (cdr ,l)))))
-
-
-;; Methods used in remaining macro definitions:
-
-(define (map proc l)
-  (if (null? l)
-    '()
-    (cons (proc (car l)) (map proc (cdr l)))))
-
-;; let
-
-(define-macro (let args . body)
-              `((lambda ,(map (lambda (x) (car x)) args)
-                 ,@body) ,@(map (lambda (x) (cadr x)) args)))
 
 ;; let*
 
@@ -105,31 +154,24 @@
    (define-macro (and . expressions)
                  (if (null? expressions)
                    #t
-                   (expand-and-expressions expressions)))
-   ))
+                   (expand-and-expressions expressions)))))
 
 ;; or
 
 ((lambda ()
    (define (expand-or-expressions expressions)
-     (if (null? expressions)
-       #f
-       (let ((first (car expressions))
-             (rest (cdr expressions))
-             (val (gensym)))
-         `(let ((,val ,first))
-            (if ,val
-              ,val
-              ,(expand-or-expressions rest))))))
+     (let ((first (car expressions))
+           (rest (cdr expressions)))
+       (if (null? rest)
+           first
+           `(if ,first
+                #t
+                ,(expand-or-expressions rest)))))
 
    (define-macro (or . expressions)
-                 (expand-or-expressions expressions))
-   ))
-
-;; not
-
-(define-macro (not x)
-              `(if ,x #f #t))
+     (if (null? expressions)
+         #f
+         (expand-or-expressions expressions)))))
 
 ;; FUNCTIONAL PROGRAMMING
 
@@ -322,9 +364,6 @@
 
 ;; LISTS
 
-; List creation
-(define (list . args) args)
-
 ; Return number of items in list
 (define (length l)
   (define (iter a count)
@@ -332,20 +371,6 @@
       count
       (iter (cdr a) (fix:+ count 1))))
   (iter l 0))
-
-; Join two lists together
-(define (join l1 l2)
-  (if (null? l1)
-    l2
-    (cons (car l1) (join (cdr l1) l2))))
-
-; Append an arbitrary number of lists together
-(define (append . lists)
-  (if (null? lists)
-    ()
-    (if (null? (cdr lists))
-      (car lists)
-      (join (car lists) (apply append (cdr lists))))))
 
 ; Reverse the contents of a list
 (define (reverse l)
@@ -380,7 +405,6 @@
   (if (fix:= n 0)
     0
     (fix:+ n (sum-recurse (fix:- n 1)))))
-
 
 
 ;; MISC
