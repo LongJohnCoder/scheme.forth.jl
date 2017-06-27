@@ -1315,95 +1315,6 @@ parse-idx-stack parse-idx-sp !
 : quote-body ( quote-obj -- quote-body-obj )
     cdr car ;
 
-: quasiquote? ( obj -- obj bool )
-    quasiquote-symbol tagged-list? ;
-
-: unquote? ( obj -- obj bool )
-    unquote-symbol tagged-list? ;
-
-: unquote-splicing? ( obj -- obj bool )
-    unquote-splicing-symbol tagged-list? ;
-
-: eval-unquote ( env obj -- res )
-    cdr ( env args )
-
-    nil? if
-        except-message: ." no arguments to unquote." recoverable-exception throw
-    then
-
-    2dup cdr
-    nil? false = if
-        except-message: ." too many arguments to unquote." recoverable-exception throw
-    then
-
-    2drop car 2swap eval
-;
-
-( Create a new list from elements of l1 consed on to l2 )
-: join-lists ( l2 l1 -- l3 )
-    nil? if 2drop exit then
-
-    2dup car
-    -2rot cdr
-    recurse cons
-;
-
-defer eval-quasiquote-item
-: eval-quasiquote-pair ( env obj -- res )
-    2over 2over ( env obj env obj )
-
-    cdr eval-quasiquote-item
-
-    -2rot car ( cdritem env objcar )
-
-    unquote-splicing? if
-        eval-unquote ( cdritems caritem )
-
-        2swap nil? if
-            2drop
-        else
-            2swap join-lists
-        then
-    else
-        eval-quasiquote-item ( cdritems caritem )
-        2swap cons
-    then
-
-;
-
-:noname ( env obj )
-    nil? if
-        2swap 2drop exit
-    then
-
-    unquote? if
-        eval-unquote exit
-    then
-
-    pair-type istype? if
-        eval-quasiquote-pair exit
-    then
-
-    2swap 2drop
-; is eval-quasiquote-item
-
-: eval-quasiquote ( obj env -- res )
-    2swap cdr ( env args )
-
-    nil? if
-        except-message: ." no arguments to quasiquote." recoverable-exception throw
-    then
-
-    2dup cdr ( env args args-cdr )
-    nil? false = if
-        except-message: ." too many arguments to quasiquote." recoverable-exception throw
-    then
-
-    2drop car ( env arg )
-
-    eval-quasiquote-item
-;
-
 : variable? ( obj -- obj bool )
     symbol-type istype? ;
 
@@ -1662,11 +1573,6 @@ hide env
     quote? if
         quote-body
         2swap 2drop
-        exit
-    then
-
-    quasiquote? if
-        2swap eval-quasiquote
         exit
     then
 
@@ -2030,33 +1936,6 @@ hide env
     R> drop ['] expand goto-deferred
 ;
 
-: expand-quasiquote-item ( exp -- result )
-    nil? if exit then
-
-    unquote? if
-        unquote-symbol 2swap cdr car expand nil cons cons
-        exit
-    then
-
-    unquote-splicing? if
-        unquote-splicing-symbol 2swap cdr car expand nil cons cons
-        exit
-    then
-    
-    pair-type istype? if
-        2dup car recurse
-        2swap cdr recurse
-        cons
-    then
-;
-
-: expand-quasiquote ( exp -- result )
-    quasiquote-symbol 2swap cdr
-
-    expand-quasiquote-item
-
-    cons ;
-
 : expand-definition ( exp -- result )
     define-symbol 2swap
 
@@ -2125,8 +2004,6 @@ hide env
     self-evaluating? if exit then
 
     quote? if exit then
-
-    quasiquote? if expand-quasiquote exit then
 
     definition? if expand-definition exit then
 
