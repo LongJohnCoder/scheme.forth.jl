@@ -1529,113 +1529,6 @@ hide env
     2swap
 ;
 
-: apply ( proc argvals -- result )
-        2swap dup case
-            primitive-proc-type of
-                drop execute     
-            endof
-
-            compound-proc-type of
-                2dup procedure-body ( argvals proc body )
-                -2rot 2dup procedure-params ( body argvals proc argnames )
-                -2rot procedure-env ( body argnames argvals procenv )
-
-                -2rot 2swap
-                flatten-proc-args
-                2swap 2rot
-
-                extend-env ( body env )
-
-                eval-sequence
-
-                R> drop ['] eval goto-deferred  \ Tail call optimization
-            endof
-
-            except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
-        endcase
-;
-
-:noname ( obj env -- result )
-    2swap
-
-    \ --- DEBUG ---
-    ( 
-      fg yellow ." Evaluating: " bold 2dup print reset-term
-      space fg green ." PS: " bold depth . reset-term
-      space fg blue  ." RS: " bold RSP@ RSP0 - . reset-term cr
-    )
-
-    self-evaluating? if
-        2swap 2drop
-        exit
-    then
-
-    quote? if
-        quote-body
-        2swap 2drop
-        exit
-    then
-
-    variable? if
-        2swap lookup-var
-        exit
-    then
-
-    definition? if
-        2swap eval-definition
-        exit
-    then
-
-    assignment? if
-        2swap eval-assignment
-        exit
-    then
-
-    macro-definition? if
-        2swap eval-define-macro
-        exit
-    then
-
-    if? if
-        2over 2over
-        if-predicate
-        2swap eval 
-
-        true? if
-            if-consequent
-        else
-            if-alternative
-        then
-
-        2swap
-        ['] eval goto-deferred
-    then
-
-    lambda? if
-        2dup lambda-parameters
-        2swap lambda-body
-        2rot make-procedure
-        exit
-    then
-
-    application? if
-
-        2over 2over ( env exp env exp )
-        operator ( env exp env opname )
-
-        2swap eval ( env exp proc )
-
-        -2rot ( proc env exp )
-        operands 2swap ( proc operands env )
-        list-of-vals ( proc argvals )
-
-        apply
-        exit
-    then
-
-    except-message: ." tried to evaluate object with unknown type." recoverable-exception throw
-; is eval
-
 \ }}}
 
 \ ---- Analyze ----
@@ -1657,8 +1550,6 @@ hide env
 
     \ Final element of eproc list is primitive procedure
     drop \ dump type signifier
-
-    .s cr \ DEBUG
 
     goto \ jump straight to primitive procedure (executor)
 ;
@@ -1876,6 +1767,11 @@ hide env
         exit
     then
 
+\    macro-definition? if
+\        analyze-macro-definition
+\        exit
+\    then
+
     assignment? if
         analyze-assignment
         exit
@@ -2020,6 +1916,10 @@ hide env
 ; is expand
 
 \ }}}
+
+:noname ( exp env -- res )
+    2swap expand analyze 2swap evaluate-eproc
+; is eval
 
 \ ---- Print ---- {{{
 
@@ -2245,8 +2145,6 @@ variable gc-stack-depth
 
         2swap 2drop ( port obj )
 
-        expand
-
         global-env obj@ eval ( port res )
     again
 ;
@@ -2274,8 +2172,6 @@ variable gc-stack-depth
         bold fg blue ." Moriturus te saluto." reset-term cr
         true exit
     then
-
-    expand
 
     global-env obj@ eval
 
