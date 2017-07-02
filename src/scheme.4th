@@ -1327,20 +1327,6 @@ parse-idx-stack parse-idx-sp !
 : definition-val ( obj -- val )
     cdr cdr car ;
 
-: eval-definition ( obj env -- res )
-    2swap
-    2over 2over
-    definition-val 2swap
-    eval
-
-    2swap definition-var 2swap
-
-    2rot
-    define-var
-
-    ok-symbol
-;
-
 : assignment? ( obj -- obj bool )
     set!-symbol tagged-list? ;
 
@@ -1349,20 +1335,6 @@ parse-idx-stack parse-idx-sp !
     
 : assignment-val ( obj -- val )
     cdr cdr car ;
-
-: eval-assignment ( obj env -- res )
-    2swap 
-    2over 2over ( env obj env obj )
-    assignment-val 2swap ( env obj valexp env )
-    eval  ( env obj val )
-    
-    2swap assignment-var 2swap ( env var val )
-
-    2rot ( var val env )
-    set-var
-
-    ok-symbol
-;
 
 : macro-definition? ( obj -- obj bool )
     define-macro-symbol tagged-list? ;
@@ -1375,22 +1347,6 @@ parse-idx-stack parse-idx-sp !
 
 : macro-definition-body ( exp -- body )
     cdr cdr ;
-
-objvar env
-: eval-define-macro ( obj env -- res )
-    env obj!
-
-    2dup macro-definition-name 2swap ( name obj )
-    2dup macro-definition-params 2swap ( name params obj )
-    macro-definition-body ( name params body )
-
-    env obj@ ( name params body env )
-
-    make-macro
-
-    ok-symbol
-;
-hide env
 
 : if? ( obj -- obj bool )
     if-symbol tagged-list? ;
@@ -1429,32 +1385,6 @@ hide env
 : lambda-body ( obj -- body )
     cdr cdr ;
 
-: eval-sequence ( explist env -- finalexp env )
-    ( Evaluates all bar the final expressions in
-      an an expression list. The final expression
-      is returned to allow for tail optimization. )
-
-    2swap ( env explist )
-
-    \ Abort on empty list
-    nil? if
-        2drop none
-        2swap exit
-    then
-
-    begin
-        2dup cdr ( env explist nextexplist )
-        nil? false =
-    while
-        -2rot car 2over ( nextexplist env exp env )
-        eval
-        2drop \ discard result
-        2swap ( env nextexplist )
-    repeat
-
-    2drop car 2swap ( finalexp env )
-;
-
 : application? ( obj -- obj bool )
     pair-type istype? ;
 
@@ -1472,18 +1402,6 @@ hide env
 
 : rest-operands ( operands -- other-operands )
     cdr ;
-
-: list-of-vals ( args env -- vals )
-    2swap
-
-    2dup nooperands? if
-        2swap 2drop
-    else
-        2over 2over first-operand 2swap eval
-        -2rot rest-operands 2swap recurse
-        cons
-    then
-;
 
 : procedure-params ( proc -- params )
     drop pair-type car ;
@@ -1610,28 +1528,6 @@ hide env
     nil cons cons cons
 ;
 
-: if-executor ( cproc aproc pproc env -- res )
-    2swap 2over ( cproc aproc env pproc env -- res )
-    evaluate-eproc
-
-    true? if
-        2swap 2drop
-    else
-        2rot 2drop
-    then
-
-    evaluate-eproc
-;
-
-: analyze-if ( exp -- eproc )
-    2dup if-predicate analyze
-    2swap 2dup if-consequent analyze
-    2swap if-alternative analyze
-
-    ['] if-executor primitive-proc-type
-    nil cons cons cons cons
-;
-
 : sequence-executor ( eproc-list env -- res )
     2swap
 
@@ -1639,7 +1535,6 @@ hide env
         2dup cdr ( env elist elist-rest)
         nil? invert
     while
-
         -2rot car 2over ( elist-rest env elist-head env )
         evaluate-eproc  ( elist-rest env head-res )
         2drop 2swap     ( env elist-rest )
@@ -1663,6 +1558,42 @@ hide env
     (analyze-sequence)
     ['] sequence-executor primitive-proc-type
     nil cons cons
+;
+
+
+: macro-definition-executor  ( name params bproc env -- ok )
+    make-macro ok-symbol
+;
+
+: analyze-macro-definition ( exp -- eproc )
+    2dup macro-definition-name
+    2swap 2dup macro-definition-params
+    2swap macro-definition-body analyze-sequence
+
+    ['] macro-definition-executor primitive-proc-type
+    nil cons cons cons cons
+;
+
+: if-executor ( cproc aproc pproc env -- res )
+    2swap 2over ( cproc aproc env pproc env -- res )
+    evaluate-eproc
+
+    true? if
+        2swap 2drop
+    else
+        2rot 2drop
+    then
+
+    ['] evaluate-eproc goto
+;
+
+: analyze-if ( exp -- eproc )
+    2dup if-consequent analyze
+    2swap 2dup if-alternative analyze
+    2swap if-predicate analyze
+
+    ['] if-executor primitive-proc-type
+    nil cons cons cons cons
 ;
 
 : lambda-executor ( params bproc env -- res )
@@ -1720,7 +1651,7 @@ hide env
         endof
 
         compound-proc-type of
-                2dup procedure-body ( argvals proc body )
+                2dup procedure-body ( argvals proc bproc )
                 -2rot 2dup procedure-params ( bproc argvals proc argnames )
                 -2rot procedure-env ( bproc argnames argvals procenv )
 
@@ -1747,52 +1678,24 @@ hide env
 
 :noname ( exp --- eproc )
 
-    self-evaluating? if
-        analyze-self-evaluating
-        exit
-    then
+    self-evaluating? if analyze-self-evaluating exit then
 
-    quote? if
-        analyze-quoted
-        exit
-    then
+    quote? if analyze-quoted exit then
     
-    variable? if
-        analyze-variable
-        exit
-    then
+    variable? if analyze-variable exit then
 
-    definition? if
-        analyze-definition
-        exit
-    then
+    definition? if analyze-definition exit then
 
-\    macro-definition? if
-\        analyze-macro-definition
-\        exit
-\    then
+    assignment? if analyze-assignment exit then
 
-    assignment? if
-        analyze-assignment
-        exit
-    then
+    macro-definition? if analyze-macro-definition exit then
 
-    if? if
-        analyze-if
-        exit
-    then
+    if? if analyze-if exit then
 
-    lambda? if
-        analyze-lambda
-        exit
-    then
+    lambda? if analyze-lambda exit then
 
-    application? if
-        analyze-application
-        exit
-    then
+    application? if analyze-application exit then
 
-    
     except-message: ." tried to analyze unknown expression type." recoverable-exception throw
 
 ; is analyze
@@ -1803,23 +1706,25 @@ hide env
 ( Simply evaluates the given procedure with expbody as its argument. )
 : macro-eval ( proc expbody -- result )
     2swap
-    2dup procedure-body ( expbody proc procbody )
-    -2rot 2dup procedure-params ( procbody expbody proc argnames )
-    -2rot procedure-env ( procbody argnames expbody procenv )
+    2dup procedure-body ( expbody proc bproc )
+    -2rot 2dup procedure-params ( bproc expbody proc argnames )
+    -2rot procedure-env ( bproc argnames expbody procenv )
     
     -2rot 2swap
     flatten-proc-args
     2swap 2rot
 
-    extend-env eval-sequence eval
+    extend-env ( bproc env )
+
+    ['] evaluate-eproc goto
 ;
 
 : expand-macro ( exp -- result )
     pair-type istype? invert if exit then
+
     2dup car symbol-type istype? invert if 2drop exit then
-    
-    lookup-macro nil? if
-        2drop exit then
+
+    lookup-macro nil? if 2drop exit then
 
     2over cdr macro-eval
 
@@ -2155,7 +2060,7 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    \ s" scheme-library.scm" load 2drop
+    s" scheme-library.scm" load 2drop
     
 \ }}}
 
@@ -2186,7 +2091,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    \ welcome-symbol nil cons global-env obj@ eval 2drop
+    welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
