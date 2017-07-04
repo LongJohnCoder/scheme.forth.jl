@@ -1273,6 +1273,11 @@ parse-idx-stack parse-idx-sp !
         exit
     then
 
+    nextchar [char] ) = if
+        inc-parse-idx
+        except-message: ." unmatched closing parenthesis." recoverable-exception throw
+    then
+
     \ Anything else is parsed as a symbol
     readsymbol charlist>symbol
 
@@ -1286,7 +1291,7 @@ parse-idx-stack parse-idx-sp !
 
 \ }}}
 
-\ ---- Eval ---- {{{
+\ ---- Syntax ---- {{{
 
 : self-evaluating? ( obj -- obj bool )
     boolean-type istype? if true exit then
@@ -1449,7 +1454,7 @@ parse-idx-stack parse-idx-sp !
 
 \ }}}
 
-\ ---- Analyze ----
+\ ---- Analyze ---- {{{
 
 : evaluate-eproc ( eproc env --- res )
 
@@ -1636,15 +1641,7 @@ parse-idx-stack parse-idx-sp !
     then
 ;
 
-: application-executor ( operator-proc arg-procs env -- res )
-    2rot 2over ( aprocs env fproc env )
-    evaluate-eproc ( aprocs env proc )
-
-    -2rot 2swap ( proc env aprocs )
-    evaluate-operand-eprocs ( proc vals )
-
-    2swap ( vals proc )
-    
+: apply ( vals proc )
     dup case
         primitive-proc-type of
             drop execute
@@ -1666,6 +1663,18 @@ parse-idx-stack parse-idx-sp !
 
         except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
     endcase
+;
+
+: application-executor ( operator-proc arg-procs env -- res )
+    2rot 2over ( aprocs env fproc env )
+    evaluate-eproc ( aprocs env proc )
+
+    -2rot 2swap ( proc env aprocs )
+    evaluate-operand-eprocs ( proc vals )
+
+    2swap ( vals proc )
+
+    ['] apply goto
 ;
 
 : analyze-application ( exp -- eproc )
@@ -1700,6 +1709,7 @@ parse-idx-stack parse-idx-sp !
 
 ; is analyze
 
+\ }}}
 
 \ ---- Macro Expansion ---- {{{
 
