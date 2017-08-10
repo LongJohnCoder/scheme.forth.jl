@@ -8,11 +8,12 @@ life as a fairly direct port of Peter Micheaux's [Bootstrap
 Scheme](https://github.com/petermichaux/bootstrap-scheme) (as described in
 [this wonderful series of blog
 posts](http://peter.michaux.ca/articles/scheme-from-scratch-introduction)) from
-C to forth, but also includes variadic compound function support, mark-sweep
-garbage collection, quasiquotation, and a basic (non-hygienic) macro
-system.
+C to forth, but also includes pre-evaluation syntactic analysis, variadic
+compound function support, mark-sweep garbage collection, quasiquotation, and a
+basic (non-hygienic) macro system.
 
-In future, I plan to also implement a more complete numerical tower to bring it closer to
+In future, I plan to also implement call-with-current-continuation and a more
+complete numerical tower to bring it closer to
 [R5RS](http://www.schemers.org/Documents/Standards/R5RS/).
 
 The goal is for the interpreter to be complete enough to be used to complete
@@ -21,9 +22,9 @@ the majority of the exercises found in [SICP](http://sarabander.github.io/sicp/)
 Running the interpreter
 =======================
 
-To run this Scheme interpreter, first open Julia from the src directory contained
-in this repository.  If you've not done so already, install forth.jl using the
-following command:
+To run this Scheme interpreter, first open Julia (**version >=0.6**) from the src
+directory contained in this repository.  If you've not done so already, install
+forth.jl using the following command:
 
     julia> Pkg.clone("https://github.com/tgvaughan/forth.jl")
 
