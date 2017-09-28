@@ -2018,7 +2018,9 @@ variable gc-stack-depth
 ;
 
 :noname
-    \ ." GC! "
+    ." GC! "
+
+    trace
 
     gc-unmark
 
@@ -2036,7 +2038,7 @@ variable gc-stack-depth
 
     gc-sweep
 
-    \ ." (" gc-count-marked . ." pairs marked as used.)" cr
+    ." (" gc-count-marked . ." pairs marked as used.)" cr
 ; is collect-garbage
 
 \ }}}
@@ -2051,7 +2053,13 @@ variable gc-stack-depth
     ok-symbol ( port res )
 
     begin
+        \ DEBUG
+        bold fg blue ." READ from " 2over drop . ." ==> " reset-term
+
         2over read-port ( port res obj )
+
+        \ DEBUG
+        2dup print cr
 
         2dup EOF character-type objeq? if
             2drop 2swap close-port
@@ -2101,7 +2109,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    welcome-symbol nil cons global-env obj@ eval 2drop
+    \ welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch

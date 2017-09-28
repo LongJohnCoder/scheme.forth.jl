@@ -280,6 +280,13 @@
     drop swap drop f> boolean-type
 ; 2 make-fa-primitive flo:>
 
+:noname ( flonum flonum -- bool )
+    drop swap drop f<= boolean-type
+; 2 make-fa-primitive flo:<=
+
+:noname ( flonum flonum -- bool )
+    drop swap drop f>= boolean-type
+; 2 make-fa-primitive flo:>=
 
 :noname ( flonum -- bool )
     drop 0.0 = boolean-type
