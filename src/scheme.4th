@@ -62,7 +62,7 @@ variable nextexception
 make-exception recoverable-exception
 make-exception unrecoverable-exception
 
-: throw reset-term throw ;
+: throw reset-term cr throw ;
 
 \ }}}
 
@@ -74,6 +74,12 @@ create car-cells scheme-memsize allot
 create car-type-cells scheme-memsize allot
 create cdr-cells scheme-memsize allot
 create cdr-type-cells scheme-memsize allot
+
+variable gc-enabled
+false gc-enabled !
+
+: gc-enabled?
+    gc-enabled @ ;
 
 create nextfrees scheme-memsize allot
 :noname
@@ -90,7 +96,9 @@ variable nextfree
     nextfree !
 
     nextfree @ scheme-memsize >= if
-        collect-garbage
+        gc-enabled? if
+            collect-garbage
+        then
     then
 
     nextfree @ scheme-memsize >= if
@@ -1937,9 +1945,6 @@ parse-idx-stack parse-idx-sp !
 
 \ ---- Garbage Collection ---- {{{
 
-variable gc-enabled
-false gc-enabled !
-
 variable gc-stack-depth
 
 : enable-gc
@@ -1948,9 +1953,6 @@ variable gc-stack-depth
 
 : disable-gc
     false gc-enabled ! ;
-
-: gc-enabled?
-    gc-enabled @ ;
 
 : pairlike? ( obj -- obj bool )
     pair-type istype? if true exit then
@@ -2018,9 +2020,7 @@ variable gc-stack-depth
 ;
 
 :noname
-    ." GC! "
-
-    trace
+    \ ." GC! "
 
     gc-unmark
 
@@ -2038,7 +2038,7 @@ variable gc-stack-depth
 
     gc-sweep
 
-    ." (" gc-count-marked . ." pairs marked as used.)" cr
+    \ ." (" gc-count-marked . ." pairs marked as used.)" cr
 ; is collect-garbage
 
 \ }}}
@@ -2054,12 +2054,12 @@ variable gc-stack-depth
 
     begin
         \ DEBUG
-        bold fg blue ." READ from " 2over drop . ." ==> " reset-term
+        \ bold fg blue ." READ from " 2over drop . ." ==> " reset-term
 
         2over read-port ( port res obj )
 
         \ DEBUG
-        2dup print cr
+        \ 2dup print cr
 
         2dup EOF character-type objeq? if
             2drop 2swap close-port
@@ -2078,7 +2078,11 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
+    enable-gc
+
     s" scheme-library.scm" load 2drop
+
+    disable-gc
     
 \ }}}
 
@@ -2109,7 +2113,7 @@ variable gc-stack-depth
     enable-gc
 
     \ Display welcome message
-    \ welcome-symbol nil cons global-env obj@ eval 2drop
+    welcome-symbol nil cons global-env obj@ eval 2drop
 
     begin
         ['] repl-body catch
@@ -2120,6 +2124,8 @@ variable gc-stack-depth
             throw false
         endcase
     until
+
+    disable-gc
 ;
 
 forth definitions
