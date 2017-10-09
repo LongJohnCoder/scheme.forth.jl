@@ -12,7 +12,7 @@ C to forth, but also includes pre-evaluation syntactic analysis, variadic
 compound function support, mark-sweep garbage collection, quasiquotation, and a
 basic (non-hygienic) macro system.
 
-In future, I plan to also implement call-with-current-continuation and a more
+In future, I plan to also implement reified continuations and a more
 complete numerical tower to bring it closer to
 [R5RS](http://www.schemers.org/Documents/Standards/R5RS/).
 
