@@ -39,6 +39,7 @@ make-type pair-type
 make-type symbol-type
 make-type primitive-proc-type
 make-type compound-proc-type
+make-type continuation-type
 make-type port-type
 : istype? ( obj type -- obj bool )
     over = ;
@@ -1669,6 +1670,10 @@ parse-idx-stack parse-idx-sp !
                ['] evaluate-eproc goto
         endof
 
+        continuation-type of
+          \ TODO: Apply continuation
+        endof
+
         except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
     endcase
 ;
@@ -1917,6 +1922,9 @@ parse-idx-stack parse-idx-sp !
 : printcomp ( primobj -- )
     2drop ." <compound procedure>" ;
 
+: printcont ( primobj --)
+    2drop ." <continuation>" ;
+
 : printnone ( noneobj -- )
     2drop ." Unspecified return value" ;
 
@@ -1935,6 +1943,7 @@ parse-idx-stack parse-idx-sp !
     pair-type istype? if ." (" printpair ." )" exit then
     primitive-proc-type istype? if printprim exit then
     compound-proc-type istype? if printcomp exit then
+    continuation-type istype? if printcont exit then
     none-type istype? if printnone exit then
     port-type istype? if printport exit then
 

@@ -607,6 +607,16 @@ defer display
     2swap apply
 ; make-primitive apply 
 
+: make-continuation
+  \ TODO: Capture parameter and return stacks in continuation
+;
+
+:noname ( args -- result )
+  make-continuation nil cons
+  2swap apply
+
+; 1 make-fa-primitive call-with-current-continuation
+
 \ }}}
 
 \ ==== Miscellaneous  ==== {{{
