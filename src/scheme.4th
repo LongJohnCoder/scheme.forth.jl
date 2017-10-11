@@ -76,12 +76,6 @@ create car-type-cells scheme-memsize allot
 create cdr-cells scheme-memsize allot
 create cdr-type-cells scheme-memsize allot
 
-variable gc-enabled
-false gc-enabled !
-
-: gc-enabled?
-    gc-enabled @ ;
-
 create nextfrees scheme-memsize allot
 :noname
     scheme-memsize 0 do
@@ -97,9 +91,7 @@ variable nextfree
     nextfree !
 
     nextfree @ scheme-memsize >= if
-        gc-enabled? if
-            collect-garbage
-        then
+      collect-garbage
     then
 
     nextfree @ scheme-memsize >= if
@@ -140,6 +132,10 @@ variable nextfree
     rot swap  cdr-type-cells + !
     cdr-cells + !
 ;
+
+variable object-stack-base
+: init-object-stack-base
+  depth object-stack-base ! ;
 
 : nil 0 nil-type ;
 : nil? nil-type istype? ;
@@ -527,6 +523,47 @@ hide env
 objvar global-env
 nil nil nil extend-env
 global-env obj!
+
+\ }}}
+
+\ ---- Continuations ---- {{{
+
+: cons-return-stack ( -- listobj )
+  rsp@ 1- rsp0  = if
+    nil exit
+  then
+
+  nil rsp@ 1- rsp0 do
+    i 1+ @ fixnum-type 2swap cons
+  loop
+;
+
+: cons-param-stack ( -- listobj )
+  nil 
+
+  depth 2- object-stack-base @ = if
+    exit
+  then
+
+  depth 2- object-stack-base @ do
+        PSP0 i + 1 + @
+        PSP0 i + 2 + @
+
+        2swap cons
+    2 +loop
+;
+
+: make-continuation
+
+  cons-param-stack
+  cons-return-stack
+  cons drop continuation-type
+;
+
+: restore-continuation
+  \ TODO: replace current parameter and return stacks with
+  \ contents of continuation object.
+;
 
 \ }}}
 
@@ -1954,15 +1991,6 @@ parse-idx-stack parse-idx-sp !
 
 \ ---- Garbage Collection ---- {{{
 
-variable gc-stack-depth
-
-: enable-gc
-    depth gc-stack-depth !
-    true gc-enabled ! ;
-
-: disable-gc
-    false gc-enabled ! ;
-
 : pairlike? ( obj -- obj bool )
     pair-type istype? if true exit then
     string-type istype? if true exit then
@@ -2038,7 +2066,7 @@ variable gc-stack-depth
     console-i/o-port obj@ gc-mark-obj
     global-env obj@ gc-mark-obj
 
-    depth gc-stack-depth @ do
+    depth object-stack-base @ do
         PSP0 i + 1 + @
         PSP0 i + 2 + @
 
@@ -2087,11 +2115,8 @@ variable gc-stack-depth
 
     include scheme-primitives.4th
 
-    enable-gc
-
+    init-object-stack-base
     s" scheme-library.scm" load 2drop
-
-    disable-gc
     
 \ }}}
 
@@ -2119,7 +2144,7 @@ variable gc-stack-depth
 : repl
     empty-parse-str
 
-    enable-gc
+    init-object-stack-base
 
     \ Display welcome message
     welcome-symbol nil cons global-env obj@ eval 2drop
@@ -2133,8 +2158,6 @@ variable gc-stack-depth
             throw false
         endcase
     until
-
-    disable-gc
 ;
 
 forth definitions
