@@ -560,6 +560,21 @@ global-env obj!
   cons drop continuation-type
 ;
 
+: continuation->pstack-list
+  drop pair-type car ;
+
+: continuation->rstack-list
+  drop pair-type cdr ;
+
+: restore-param-stack ( continuation -- obj_stack continuation )
+
+  2dup >R >R
+  continuation->pstack-list
+
+  ( Idea: allocate stack space first using psp!,
+    then copy objects from list. )
+;
+
 : restore-continuation
   \ TODO: replace current parameter and return stacks with
   \ contents of continuation object.
