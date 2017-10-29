@@ -410,6 +410,9 @@ variable read-line-buffer-offset
 : make-frame ( vars vals -- frame )
     cons ;
 
+: add-frame-to-env ( frame env -- env )
+    cons ;
+
 : frame-vars ( frame -- vars )
     car ;
 
@@ -424,98 +427,87 @@ variable read-line-buffer-offset
 ;
 
 : extend-env ( vars vals env -- env )
-    >R >R
-    make-frame
-    R> R>
-    cons
+    -2rot make-frame
+    2swap add-frame-to-env
 ;
 
-objvar vars
-objvar vals
-
-: get-vars-vals-frame ( var frame -- bool )
-    2dup frame-vars vars obj!
-    frame-vals vals obj!
+: get-vals-frame ( var frame -- vals | nil )
+    2dup frame-vars 
+    2swap frame-vals ( var vars vals )
 
     begin
-        vars obj@ nil objeq? false =
+        nil? false =
     while
-        2dup vars obj@ car objeq? if
-            2drop true
+
+        -2rot ( vals var vars )
+        2over 2over car objeq? if
+            2drop 2drop
             exit
         then
 
-        vars obj@ cdr vars obj!
-        vals obj@ cdr vals obj!
+        cdr 2rot cdr
     repeat
 
-    2drop false
+    2drop 2drop 2drop
+    nil
 ;
 
-: get-vars-vals ( var env -- vars? vals? bool )
+: get-vals ( var env -- vals | nil )
 
     begin
         nil? false =
     while
         2over 2over first-frame
-        get-vars-vals-frame if
-            2drop 2drop
-            vars obj@ vals obj@ true
+        get-vars-vals-frame nil? false = if
+            2swap 2drop 2swap 2drop
             exit
         then
+
+        2drop
 
         enclosing-env
     repeat
 
-    2drop 2drop
-    false
+    2swap 2drop
 ;
 
-hide vars
-hide vals
-
-objvar var
-
+objvar var \ Used only for error messages
 : lookup-var ( var env -- val )
     2over var obj!
-    get-vars-vals if
-        2swap 2drop car
-    else
-        except-message: ." tried to read unbound variable '" var obj@ print ." '." recoverable-exception  throw
+    
+    get-vars-vals nil? if
+        except-message: ." tried to read unbound variable '" var obj@ print ." '."
+        recoverable-exception throw
     then
+
+    car
 ;
 
 : set-var ( var val env -- )
-    >R >R 2swap R> R> ( val var env )
-    2over var obj!
-    get-vars-vals if
-        2swap 2drop ( val vals )
-        set-car!
+    2rot 2dup var obj! ( val env var )
+    get-vars-vals nil? if
+        except-message: ." tried to set unbound variable '" var obj@ print ." '."
+        recoverable-exception throw
     else
-        except-message: ." tried to set unbound variable '" var obj@ print ." '." recoverable-exception throw
+        ( val vals )
+        set-car!
     then
 ;
-
 hide var
 
-objvar env
-
 : define-var ( var val env -- )
-    env obj! 
+    first-frame ( var val frame )
+    2rot 2over 2over ( val frame var frame var )
 
-    2over env obj@ ( var val var env )
-    get-vars-vals if
-        2swap 2drop ( var val vals )
-        set-car!
-        2drop
+    get-vals-frame nil? if
+        2drop ( val frame var )
+        2swap add-binding
     else
-        env obj@
-        first-frame ( var val frame )
-        add-binding
+        ( val frame var vals )
+        2swap 2drop 2swap 2drop
+        cons
     then
 ;
-
-hide env
 
 : make-procedure ( params body env -- proc )
     nil
@@ -1944,6 +1936,20 @@ parse-idx-stack parse-idx-sp !
 \ }}}
 
 \ ---- Garbage Collection ---- {{{
+
+( Notes on garbage collection:
+  This is a mark-sweep garbage collector, invoked by cons.
+  The roots of the object tree used by the marking routine 
+  include all objects in the parameter stack, and several
+  other fixed roots such as global-env, symbol-table, macro-table,
+  and the console-i/o-port.
+
+  NO OTHER OBJECTS WILL BE MARKED!
+
+  This places implicit restrictions on when cons can be invoked.
+  Invoking cons when live objects are stored on the return stack
+  or in other variables than the above will result in possible
+  memory corruption if the cons triggers the GC. )
 
 variable gc-stack-depth
 
