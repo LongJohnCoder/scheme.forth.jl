@@ -497,15 +497,16 @@ hide var
 
 : define-var ( var val env -- )
     first-frame ( var val frame )
-    2rot 2over 2over ( val frame var frame var )
+    2rot 2swap 2over 2over ( val var frame var frame )
 
     get-vals-frame nil? if
-        2drop ( val frame var )
-        -2rot add-binding
+        2drop
+        -2rot 2swap 2rot
+        add-binding
     else
-        ( val frame var vals )
+        ( val var frame vals )
         2swap 2drop 2swap 2drop
-        cons
+        set-car!
     then
 ;
 
