@@ -1935,7 +1935,6 @@ parse-idx-stack parse-idx-sp !
     except-message: ." tried to print object with unknown type." recoverable-exception throw
 ; is print
 
-xxxx
 \ }}}
 
 \ ---- Garbage Collection ---- {{{
