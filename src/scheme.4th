@@ -458,7 +458,7 @@ variable read-line-buffer-offset
         nil? false =
     while
         2over 2over first-frame
-        get-vars-vals-frame nil? false = if
+        get-vals-frame nil? false = if
             2swap 2drop 2swap 2drop
             exit
         then
@@ -475,7 +475,7 @@ objvar var \ Used only for error messages
 : lookup-var ( var env -- val )
     2over var obj!
     
-    get-vars-vals nil? if
+    get-vals nil? if
         except-message: ." tried to read unbound variable '" var obj@ print ." '."
         recoverable-exception throw
     then
@@ -485,7 +485,7 @@ objvar var \ Used only for error messages
 
 : set-var ( var val env -- )
     2rot 2dup var obj! ( val env var )
-    get-vars-vals nil? if
+    get-vals nil? if
         except-message: ." tried to set unbound variable '" var obj@ print ." '."
         recoverable-exception throw
     else
@@ -501,7 +501,7 @@ hide var
 
     get-vals-frame nil? if
         2drop ( val frame var )
-        2swap add-binding
+        -2rot add-binding
     else
         ( val frame var vals )
         2swap 2drop 2swap 2drop
@@ -1933,6 +1933,7 @@ parse-idx-stack parse-idx-sp !
     except-message: ." tried to print object with unknown type." recoverable-exception throw
 ; is print
 
+xxxx
 \ }}}
 
 \ ---- Garbage Collection ---- {{{
