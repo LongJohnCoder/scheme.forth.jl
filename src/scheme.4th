@@ -485,6 +485,7 @@ objvar var \ Used only for error messages
 
 : set-var ( var val env -- )
     2rot 2dup var obj! ( val env var )
+    2swap ( val var env )
     get-vals nil? if
         except-message: ." tried to set unbound variable '" var obj@ print ." '."
         recoverable-exception throw
