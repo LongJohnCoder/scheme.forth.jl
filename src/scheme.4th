@@ -530,6 +530,8 @@ global-env obj!
   nil rsp@ 1- rsp0 do
     i 1+ @ fixnum-type 2swap cons
   loop
+
+  rsp@ 1- rsp0 - fixnum-type 2swap cons
 ;
 
 : cons-param-stack ( -- listobj )
@@ -545,6 +547,8 @@ global-env obj!
 
         2swap cons
     2 +loop
+
+  depth 2- fixnum-type 2swap cons
 ;
 
 : make-continuation
@@ -562,11 +566,28 @@ global-env obj!
 
 : restore-param-stack ( continuation -- obj_stack continuation )
 
-  2dup >R >R
   continuation->pstack-list
+  2dup >R >R
 
-  ( Idea: allocate stack space first using psp!,
+  ( Allocate stack space first using psp!,
     then copy objects from list. )
+
+  car drop
+  object-stack-base @ psp0 + + psp!
+
+  R> R> 2dup cdr
+  2swap
+  car drop 2- 0 swap do
+
+      2dup car
+      PSP0 object-stack-base @ + i + 2 + !
+      PSP0 object-stack-base @ + i + 1 + !
+      cdr
+
+  -2 +loop
+
+  2drop
+
 ;
 
 : restore-continuation
@@ -2103,6 +2124,8 @@ parse-idx-stack parse-idx-sp !
 ; is collect-garbage
 
 \ }}}
+
+xxxx
 
 \ ---- Loading files ---- {{{
 
