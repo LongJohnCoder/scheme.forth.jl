@@ -564,8 +564,7 @@ global-env obj!
 : continuation->rstack-list
   drop pair-type cdr ;
 
-: restore-param-stack ( continuation -- obj_stack continuation )
-
+: restore-param-stack ( continuation -- obj_stack )
   continuation->pstack-list
   2dup >R >R
 
@@ -587,12 +586,40 @@ global-env obj!
   -2 +loop
 
   2drop
-
 ;
 
-: restore-continuation
+: restore-return-stack ( continuation -- )
+    R> \ store top of return stack on PS
+    continuation->rstack-list
+    2dup >R >R
+
+    ( Allocate stack space first using rsp!,
+      then copy objects from list. )
+
+    car drop
+    rsp0 + rsp!
+
+    R> R> 2dup cdr
+    2swap
+    car drop 0 swap do
+        2dup car drop
+        rsp0 i + 1 + !
+        cdr
+    1- +loop
+
+    2drop
+    trace
+    >R \ restore original top of return stack
+;
+
+: restore-continuation ( continuation -- )
   \ TODO: replace current parameter and return stacks with
   \ contents of continuation object.
+
+    2dup >R >R
+    restore-param-stack
+    R> R>
+    restore-return-stack
 ;
 
 \ }}}
