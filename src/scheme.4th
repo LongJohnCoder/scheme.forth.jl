@@ -589,26 +589,13 @@ global-env obj!
 ;
 
 : restore-return-stack ( continuation -- )
-    R> \ store top of return stack on PS
+
+    R> -rot \ store top of return stack on PS
     continuation->rstack-list
-    2dup >R >R
+    2dup print 2dup
 
-    ( Allocate stack space first using rsp!,
-      then copy objects from list. )
+    \ TODO: Implement body of return stack restoration
 
-    car drop
-    rsp0 + rsp!
-
-    R> R> 2dup cdr
-    2swap
-    car drop 0 swap do
-        2dup car drop
-        rsp0 i + 1 + !
-        cdr
-    1- +loop
-
-    2drop
-    trace
     >R \ restore original top of return stack
 ;
 
@@ -618,6 +605,10 @@ global-env obj!
 
     2dup >R >R
     restore-param-stack
+
+    ." ====== PARAM STACK RESTORED ======" cr
+    trace
+    
     R> R>
     restore-return-stack
 ;
@@ -2152,6 +2143,7 @@ parse-idx-stack parse-idx-sp !
 
 \ }}}
 
+\ DEBUGGING
 xxxx
 
 \ ---- Loading files ---- {{{
