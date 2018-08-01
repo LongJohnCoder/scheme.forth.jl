@@ -613,15 +613,19 @@ global-env obj!
     2drop
 ;
 
-: restore-continuation ( continuation -- )
-  \ TODO: replace current parameter and return stacks with
-  \ contents of continuation object.
+: restore-continuation-with-arg ( continuation obj -- )
 
-    2dup >R >R
+    >R >R \ Store obj on return stack
+
+    2dup >R >R \ Store copy of continuation on return stack
 
     restore-param-stack
 
-    R> R>
+    R> R> \ Pop continuation from return stack
+
+    R> R> \ Pop obj from return stack
+
+    2swap
 
     restore-return-stack
 ;
@@ -1769,7 +1773,22 @@ parse-idx-stack parse-idx-sp !
         endof
 
         continuation-type of
-          \ TODO: Apply continuation
+            2swap
+            nil? if
+                except-message: ." Continuations expect exactly 1 argument."
+                recoverable-exception throw
+            then
+
+            2dup cdr
+
+            nil? not if
+                except-message: ." Continuations expect exactly 1 argument."
+                recoverable-exception throw
+            then
+
+            2drop car
+                
+            restore-continuation-with-arg
         endof
 
         except-message: ." object '" drop print ." ' not applicable." recoverable-exception throw
@@ -2155,9 +2174,6 @@ parse-idx-stack parse-idx-sp !
 ; is collect-garbage
 
 \ }}}
-
-\ DEBUGGING
-xxxx
 
 \ ---- Loading files ---- {{{
 
