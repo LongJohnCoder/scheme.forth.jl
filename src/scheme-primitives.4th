@@ -617,8 +617,6 @@ defer display
         2swap 2drop
     then
 
-    trace
-
 ; 1 make-fa-primitive call-with-current-continuation
 
 \ }}}

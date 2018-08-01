@@ -1790,7 +1790,7 @@ parse-idx-stack parse-idx-sp !
 
             2dup cdr
 
-            nil? not if
+            nil? invert if
                 except-message: ." Continuations expect exactly 1 argument."
                 recoverable-exception throw
             then
@@ -2101,6 +2101,7 @@ parse-idx-stack parse-idx-sp !
     symbol-type istype? if true exit then
     compound-proc-type istype? if true exit then
     port-type istype? if true exit then
+    continuation-type istype? if true exit then
 
     false
 ;
