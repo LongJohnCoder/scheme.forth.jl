@@ -597,6 +597,8 @@ global-env obj!
   2drop
 ;
 
+( This word restores the return stack to that contained in the
+continuation object, and thus NEVER RETURNS. )
 : restore-return-stack ( continuation -- )
 
     continuation->rstack-list
@@ -618,6 +620,15 @@ global-env obj!
     2drop
 ;
 
+( This word restores the parameter and return stacks
+to those in the continuation object. The restoration of the 
+return stack means that execution continues at the point
+described in the continuation object, so this word NEVER RETURNS.
+
+Note that both obj and a false-obj are added to the parameter
+stack before the return stack is restored, so that make-continuation
+knows that this execution path is the result of a continuation
+restoration rather than the original call to make-continuation. )
 : restore-continuation-with-arg ( continuation obj -- )
 
     >R >R \ Store obj on return stack

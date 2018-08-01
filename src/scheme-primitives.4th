@@ -610,6 +610,14 @@ defer display
 :noname ( proc -- result )
     make-continuation
 
+    ( Note that we get to this point either when
+    make-continuation is originally called or when
+    restore-continuation is called.  Since we don't
+    want to call proc again following a restore,
+    we use the boolean values placed on the parameter
+    stack by make-continuation and restore-continuation
+    to detect which call got us here and act accordingly. )
+
     drop if
         nil cons
         2swap apply
