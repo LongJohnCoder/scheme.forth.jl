@@ -4,10 +4,10 @@
 
 (load "scheme-library-1-essential.scm")
 (load "scheme-library-2-derived-forms.scm")
-;(load "scheme-library-3-functional.scm")
-;(load "scheme-library-4-numbers.scm")
-;(load "scheme-library-5-lists.scm")
-;(load "scheme-library-6-testing.scm")
+(load "scheme-library-3-functional.scm")
+(load "scheme-library-4-numbers.scm")
+(load "scheme-library-5-lists.scm")
+(load "scheme-library-6-testing.scm")
 
 ;; MISC
 
