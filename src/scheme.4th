@@ -580,7 +580,7 @@ global-env obj!
 
   R> R> 2dup cdr
   2swap
-  car drop 1- 0 swap do
+  stack-list-len 1- 0 swap do
 
       2dup car
       PSP0 object-stack-base @ + i 2* + 2 + !
@@ -592,35 +592,25 @@ global-env obj!
   2drop
 ;
 
-: list->pad ( list n -- )
-
-    pad + 1- \ final dest addr
-    pad      \ initial dest addr
-    swap
-    do
-        2dup cdr 2swap car
-        drop i !
-    -1 +loop
-
-    2drop
-;
-
 : restore-return-stack ( continuation -- )
 
     continuation->rstack-list
 
-    2dup stack-list-len -rot ( n stack-list )
-    2dup cdr 2swap stack-list-len  ( n list n )
-
-    list->pad  ( n )
+    2dup cdr 2swap stack-list-len ( list n )
 
     dup RSP0 + RSP! \ expand return stack to accommodate entries
 
-    ( n )
-    0   \ initial offset
+    ( list n )
+
+    1-  \ initial offset n-1
+    0   \ final offset 0
+    swap
     do
-        pad i + @ RSP0 i 1+ + !
-    loop
+        2dup cdr 2swap car drop
+        RSP0 i 1+ + !
+    -1 +loop
+
+    2drop
 ;
 
 : restore-continuation ( continuation -- )
