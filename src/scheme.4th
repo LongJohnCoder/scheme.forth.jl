@@ -564,6 +564,10 @@ global-env obj!
 : continuation->rstack-list
   drop pair-type cdr ;
 
+: stack-list-len ( stack-list -- n )
+    car drop
+;
+
 : restore-param-stack ( continuation -- obj_stack )
   continuation->pstack-list
   2dup >R >R
@@ -588,10 +592,7 @@ global-env obj!
   2drop
 ;
 
-: list->pad ( list -- n )
-
-    2dup car drop -rot \ keep length of list on stack
-    2dup cdr 2swap car drop \ get length from list
+: list->pad ( list n -- )
 
     pad + 1- \ final dest addr
     pad      \ initial dest addr
@@ -606,19 +607,20 @@ global-env obj!
 
 : restore-return-stack ( continuation -- )
 
-    trace
-
     continuation->rstack-list
-    list->pad
-    dup
-    RSP0 + RSP! \ expand return stack to accommodate entries
 
+    2dup stack-list-len -rot ( n stack-list )
+    2dup cdr 2swap stack-list-len  ( n list n )
+
+    list->pad  ( n )
+
+    dup RSP0 + RSP! \ expand return stack to accommodate entries
+
+    ( n )
     0   \ initial offset
     do
         pad i + @ RSP0 i 1+ + !
     loop
-
-    trace
 ;
 
 : restore-continuation ( continuation -- )
@@ -626,12 +628,11 @@ global-env obj!
   \ contents of continuation object.
 
     2dup >R >R
+
     restore-param-stack
 
-    ." ====== PARAM STACK RESTORED ======" cr
-    trace
-    
     R> R>
+
     restore-return-stack
 ;
 
