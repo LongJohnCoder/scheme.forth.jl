@@ -607,9 +607,17 @@ defer display
     2swap apply
 ; make-primitive apply 
 
-:noname ( args -- result )
-  make-continuation nil cons
-  2swap apply
+:noname ( proc -- result )
+    make-continuation
+
+    drop if
+        nil cons
+        2swap apply
+    else
+        2swap 2drop
+    then
+
+    trace
 
 ; 1 make-fa-primitive call-with-current-continuation
 

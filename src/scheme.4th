@@ -551,11 +551,16 @@ global-env obj!
   depth 2- 2/ fixnum-type 2swap cons
 ;
 
-: make-continuation
+: make-continuation ( -- continuation true-obj )
+    \ true-obj allows calling code to detect whether
+    \ it is being called immediately following make-continuation
+    \ or by a restore-continuation.
 
   cons-param-stack
   cons-return-stack
   cons drop continuation-type
+
+  true boolean-type
 ;
 
 : continuation->pstack-list
@@ -624,6 +629,10 @@ global-env obj!
     R> R> \ Pop continuation from return stack
 
     R> R> \ Pop obj from return stack
+
+    2swap
+
+    false boolean-type \ Add flag signifying continuation restore
 
     2swap
 
