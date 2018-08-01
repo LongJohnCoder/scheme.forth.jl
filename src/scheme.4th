@@ -548,7 +548,7 @@ global-env obj!
         2swap cons
     2 +loop
 
-  depth 2- fixnum-type 2swap cons
+  depth 2- 2/ fixnum-type 2swap cons
 ;
 
 : make-continuation
@@ -575,19 +575,19 @@ global-env obj!
   ( Allocate stack space first using psp!,
     then copy objects from list. )
 
-  car drop
+  car drop 2*
   object-stack-base @ psp0 + + psp!
 
   R> R> 2dup cdr
   2swap
-  car drop 2- 0 swap do
+  car drop 1- 0 swap do
 
       2dup car
-      PSP0 object-stack-base @ + i + 2 + !
-      PSP0 object-stack-base @ + i + 1 + !
+      PSP0 object-stack-base @ + i 2* + 2 + !
+      PSP0 object-stack-base @ + i 2* + 1 + !
       cdr
 
-  -2 +loop
+  -1 +loop
 
   2drop
 ;
