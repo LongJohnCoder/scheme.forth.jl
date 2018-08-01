@@ -9,8 +9,9 @@ Scheme](https://github.com/petermichaux/bootstrap-scheme) (as described in
 [this wonderful series of blog
 posts](http://peter.michaux.ca/articles/scheme-from-scratch-introduction)) from
 C to forth, but also includes pre-evaluation syntactic analysis, variadic
-compound function support, mark-sweep garbage collection, quasiquotation, and a
-basic (non-hygienic) macro system.
+compound function support, mark-sweep garbage collection, quasiquotation, a
+basic (non-hygienic) macro system and first-class continuations via
+`call-with-current-continuation`.
 
 In future, I plan to also implement reified continuations and a more
 complete numerical tower to bring it closer to
