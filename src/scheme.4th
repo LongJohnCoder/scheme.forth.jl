@@ -588,15 +588,37 @@ global-env obj!
   2drop
 ;
 
+: list->pad ( list -- n )
+
+    2dup car drop -rot \ keep length of list on stack
+    2dup cdr 2swap car drop \ get length from list
+
+    pad + 1- \ final dest addr
+    pad      \ initial dest addr
+    swap
+    do
+        2dup cdr 2swap car
+        drop i !
+    -1 +loop
+
+    2drop
+;
+
 : restore-return-stack ( continuation -- )
 
-    R> -rot \ store top of return stack on PS
+    trace
+
     continuation->rstack-list
-    2dup print 2dup
+    list->pad
+    dup
+    RSP0 + RSP! \ expand return stack to accommodate entries
 
-    \ TODO: Implement body of return stack restoration
+    0   \ initial offset
+    do
+        pad i + @ RSP0 i 1+ + !
+    loop
 
-    >R \ restore original top of return stack
+    trace
 ;
 
 : restore-continuation ( continuation -- )
