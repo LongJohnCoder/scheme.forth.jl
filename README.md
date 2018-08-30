@@ -1,5 +1,5 @@
 scheme.forth.jl
----------------
+===============
 
 A hobby Scheme interpreter for FORTH 83. Specifically it is targeted at
 [forth.jl](http://github.com/tgvaughan/forth.jl) which is an implementation of
@@ -18,7 +18,7 @@ C to forth, but also includes:
 * first-class continuations via `call-with-current-continuation`.
 
 Running the interpreter
-=======================
+-----------------------
 
 To run this Scheme interpreter, first open Julia (**version >=0.6**) from the src
 directory contained in this repository.  If you've not done so already, install
@@ -53,7 +53,7 @@ At this point you can start entering Scheme commands.  For example,
     ; 120
 
 Metacircular Evaluator
-======================
+----------------------
 
 Of course, one of the things you can do in Scheme (or of course any programming
 language, this is the fundamental thing) is implement an interpreter for
@@ -102,7 +102,7 @@ recursive list append procedure:
 You may have to wait a minute or so for the final result to be printed.
 
 License
-=======
+-------
 
 This software is free (as in freedom) and is distributed under the terms
 of version 3 of the GNU General Public License.  A copy of this license
