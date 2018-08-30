@@ -17,12 +17,6 @@ C to forth, but also includes:
 * a basic (non-hygienic) macro system and
 * first-class continuations via `call-with-current-continuation`.
 
-In future, I plan to also implement a more complete numerical tower to
-bring it closer to [R5RS](http://www.schemers.org/Documents/Standards/R5RS/).
-
-The goal is for the interpreter to be complete enough to be used to complete
-the majority of the exercises found in [SICP](http://sarabander.github.io/sicp/).
-
 Running the interpreter
 =======================
 
