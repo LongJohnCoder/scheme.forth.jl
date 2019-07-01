@@ -20,11 +20,12 @@ C to forth, but also includes:
 Running the interpreter
 -----------------------
 
-To run this Scheme interpreter, first open Julia (**version >=0.6**) from the src
-directory contained in this repository.  If you've not done so already, install
-forth.jl using the following command:
+To run this Scheme interpreter, first open Julia (forth.jl requires
+**version >=1.0**) from the src directory contained in this
+repository.  If you've not done so already, install forth.jl using the
+Julia package manager (accessed using the `]` key):
 
-    julia> Pkg.clone("https://github.com/tgvaughan/forth.jl")
+    (v1.0) pkg> add https://github.com/tgvaughan/forth.jl
 
 Then, import and run the Forth system:
 
